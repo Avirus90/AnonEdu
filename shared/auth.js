@@ -1,5 +1,4 @@
-// Authentication Utilities for EduAnon Platform (GitHub Pages Version)
-
+// Authentication Utilities for EduAnon Platform
 class EduAuth {
     constructor() {
         this.currentUser = null;
@@ -15,7 +14,7 @@ class EduAuth {
             if (!firebase.apps.length) {
                 firebase.initializeApp(FIREBASE_CONFIG);
             }
-            console.log('✅ Firebase initialized for GitHub Pages');
+            console.log('✅ Firebase initialized');
         } catch (error) {
             console.error('Firebase init error:', error);
         }
@@ -38,7 +37,6 @@ class EduAuth {
                 console.log('👤 No user logged in');
                 this.userRole = null;
                 
-                // If not demo mode and not on landing page, redirect
                 if (!this.isDemoMode && 
                     !window.location.pathname.endsWith('index.html') &&
                     !window.location.pathname.endsWith('/')) {
@@ -93,7 +91,6 @@ class EduAuth {
     }
     
     applyRoleBasedUI() {
-        // Show user info in header if element exists
         const userInfoEl = document.getElementById('userInfo');
         if (userInfoEl && this.currentUser) {
             userInfoEl.innerHTML = `
@@ -179,7 +176,7 @@ class EduAuth {
         }
     }
     
-    async getAuthToken() {
+    async getToken() {
         if (!this.currentUser) return null;
         return await this.currentUser.getIdToken();
     }
@@ -204,6 +201,9 @@ class EduAuth {
 }
 
 // Initialize when DOM is ready
+let eduAuth = null;
 document.addEventListener('DOMContentLoaded', function() {
-    window.eduAuth = new EduAuth();
+    eduAuth = new EduAuth();
+    window.eduAuth = eduAuth;
+    window.auth = eduAuth; // Alias for compatibility
 });
