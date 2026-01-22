@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduAnon - Free EdTech Platform</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --edu-primary: #2c3e50;
+            --edu-secondary: #3498db;
+            --edu-accent: #1abc9c;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--edu-primary) 0%, var(--edu-secondary) 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'Noto Sans', sans-serif;
+        }
+        
+        .edu-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .edu-card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            margin-top: 30px;
+        }
+        
+        .edu-header {
+            background: var(--edu-primary);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .edu-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            background: var(--edu-accent);
+            color: white;
+            border-radius: 30px;
+            font-weight: bold;
+            margin: 10px;
+        }
+        
+        .edu-feature {
+            padding: 25px;
+            border-bottom: 1px solid #eee;
+            transition: all 0.3s;
+        }
+        
+        .edu-feature:hover {
+            background: #f8f9fa;
+            transform: translateX(10px);
+        }
+        
+        .login-btn {
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .login-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .online { background: #2ecc71; }
+        .offline { background: #e74c3c; }
+        
+        .github-badge {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #24292e;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            z-index: 1000;
+        }
+        
+        @media (max-width: 768px) {
+            .edu-container { padding: 10px; }
+            .edu-header { padding: 20px; }
+            .github-badge { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <!-- GitHub Badge -->
+    <a href="https://avirus90.github.io/AnonEdu/" target="_blank" class="github-badge">
+        <i class="fab fa-github"></i> virus90.github.io/AnonEdu
+    </a>
+    
+    <div class="edu-container">
+        <!-- Header -->
+        <div class="edu-card">
+            <div class="edu-header">
+                <h1 class="display-4 fw-bold">
+                    <i class="fas fa-graduation-cap"></i> EduAnon
+                </h1>
+                <p class="lead">100% Free • Secure • Anonymous EdTech Platform</p>
+                
+                <div class="mt-4">
+                    <span class="edu-badge"><i class="fas fa-lock"></i> 100% Free</span>
+                    <span class="edu-badge"><i class="fas fa-shield-alt"></i> Highly Secure</span>
+                    <span class="edu-badge"><i class="fas fa-bolt"></i> Telegram Powered</span>
+                </div>
+                
+                <!-- GitHub Pages URL Display -->
+                <div class="mt-4">
+                    <div class="alert alert-light d-inline-block">
+                        <i class="fab fa-github"></i> 
+                        <strong>GitHub Pages:</strong> 
+                        <code>https://avirus90.github.io/AnonEdu/</code>
+                    </div>
+                </div>
+                
+                <div class="mt-4" id="statusPanel">
+                    <div class="d-flex justify-content-center gap-4">
+                        <div>
+                            <span class="status-indicator" id="firebaseStatus"></span>
+                            <small>Firebase</small>
+                        </div>
+                        <div>
+                            <span class="status-indicator" id="backendStatus"></span>
+                            <small>Backend</small>
+                        </div>
+                        <div>
+                            <span class="status-indicator" id="telegramStatus"></span>
+                            <small>Telegram</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Features -->
+            <div class="row g-0">
+                <div class="col-md-4">
+                    <div class="edu-feature">
+                        <h4><i class="fas fa-user-graduate text-primary"></i> Student Access</h4>
+                        <p class="text-muted">View-only access to courses, PDFs, videos. No downloads allowed.</p>
+                        <button class="btn btn-outline-primary w-100 mt-3" onclick="loginAsStudent()">
+                            <i class="fab fa-google"></i> Login as Student
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="edu-feature">
+                        <h4><i class="fas fa-user-shield text-success"></i> Admin Access</h4>
+                        <p class="text-muted">Full control: upload content, create courses, manage users.</p>
+                        <button class="btn btn-success w-100 mt-3" onclick="loginAsAdmin()">
+                            <i class="fab fa-google"></i> Admin Login
+                        </button>
+                        <small class="text-muted d-block mt-2">
+                            Only: <strong>bimbadharbaghel0@gmail.com</strong>
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="edu-feature">
+                        <h4><i class="fas fa-rocket text-warning"></i> Live Demo</h4>
+                        <p class="text-muted">Try without login (limited features)</p>
+                        <button class="btn btn-warning w-100 mt-3" onclick="tryDemo()">
+                            <i class="fas fa-eye"></i> Try Demo
+                        </button>
+                        <small class="text-muted d-block mt-2">
+                            <a href="#" onclick="showSystemInfo()">System Information</a>
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Info Panel -->
+            <div class="p-4 border-top">
+                <h5><i class="fas fa-info-circle"></i> Platform Information</h5>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success"></i> <strong>Firebase Project:</strong> eduanon-835f9</li>
+                            <li><i class="fas fa-check text-success"></i> <strong>Telegram Bot:</strong> @ANONEDU_BOT</li>
+                            <li><i class="fas fa-check text-success"></i> <strong>Public Channel:</strong> @ANON_EDU</li>
+                            <li><i class="fas fa-check text-success"></i> <strong>GitHub Pages:</strong> virus90.github.io/AnonEdu</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-server"></i> <strong>Backend:</strong> <span id="backendUrl">Checking...</span></li>
+                            <li><i class="fas fa-code"></i> <strong>Frontend:</strong> HTML/CSS/JS Only</li>
+                            <li><i class="fas fa-shield-alt"></i> <strong>Security:</strong> View-only for students</li>
+                            <li><i class="fas fa-database"></i> <strong>Storage:</strong> Telegram Only</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-3">
+                    <h6><i class="fas fa-exclamation-triangle"></i> Important Notes:</h6>
+                    <ul class="mb-0">
+                        <li>Students cannot download content - view-only access</li>
+                        <li>Only the specified email can login as admin</li>
+                        <li>All content stored securely on Telegram</li>
+                        <li>No credit card or payments required</li>
+                        <li>Deployed on GitHub Pages: <code>https://avirus90.github.io/AnonEdu/</code></li>
+                    </ul>
+                </div>
+                
+                <!-- Quick Links -->
+                <div class="mt-4">
+                    <h6><i class="fas fa-external-link-alt"></i> Quick Links:</h6>
+                    <div class="btn-group btn-group-sm">
+                        <a href="https://t.me/ANON_EDU" class="btn btn-outline-primary" target="_blank">
+                            <i class="fab fa-telegram"></i> Public Channel
+                        </a>
+                        <a href="https://t.me/+oG9POSOSZes3MDJl" class="btn btn-outline-secondary" target="_blank">
+                            <i class="fas fa-lock"></i> Private Channel
+                        </a>
+                        <a href="https://console.firebase.google.com/project/eduanon-835f9" class="btn btn-outline-warning" target="_blank">
+                            <i class="fas fa-fire"></i> Firebase Console
+                        </a>
+                        <a href="https://github.com/avirus90/AnonEdu" class="btn btn-outline-dark" target="_blank">
+                            <i class="fab fa-github"></i> GitHub Repo
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="text-center mt-4 text-white">
+            <p>
+                <small>
+                    EduAnon Platform • STEP 4: Frontend Auth • 
+                    GitHub Pages: <strong>avirus90.github.io/AnonEdu</strong> • 
+                    <a href="https://github.com/avirus90/AnonEdu" class="text-white" target="_blank">
+                        <i class="fab fa-github"></i> View Source Code
+                    </a>
+                </small>
+            </p>
+            <p class="text-muted">
+                <small>Deployed via GitHub Pages • Firebase Auth • Telegram Storage • 100% Free</small>
+            </p>
+        </div>
+    </div>
+
+    <!-- System Info Modal -->
+    <div class="modal fade" id="systemInfoModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-server"></i> System Information</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Firebase Configuration:</h6>
+                            <pre class="bg-light p-3 rounded"><code id="firebaseConfigCode"></code></pre>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Telegram Configuration:</h6>
+                            <pre class="bg-light p-3 rounded"><code id="telegramConfigCode"></code></pre>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <h6>Deployment URLs:</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <th>Frontend (GitHub Pages):</th>
+                                <td><code>https://avirus90.github.io/AnonEdu/</code></td>
+                            </tr>
+                            <tr>
+                                <th>Backend (Vercel):</th>
+                                <td><code>https://telegram-backend-rq82.vercel.app</code></td>
+                            </tr>
+                            <tr>
+                                <th>Local Backend:</th>
+                                <td><code>http://localhost:3000</code></td>
+                            </tr>
+                            <tr>
+                                <th>Firebase Console:</th>
+                                <td><code>https://console.firebase.google.com/project/eduanon-835f9</code></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Main Script -->
+    <script>
+        // ==================== CONFIGURATION ====================
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyDuoHlw9Op4ZHbSvT3JQfoSWJFa0rjelz4",
+            authDomain: "eduanon-835f9.firebaseapp.com",
+            projectId: "eduanon-835f9",
+            storageBucket: "eduanon-835f9.firebasestorage.app",
+            messagingSenderId: "378269868239",
+            appId: "1:378269868239:web:951d8ca35fd252313dd7ba"
+        };
+        
+        // Backend URLs (YOUR SPECIFIC)
+        const BACKEND_URLS = {
+            local: "http://localhost:3000",
+            vercel: "https://telegram-backend-rq82.vercel.app",
+            get active() {
+                // Always use Vercel for GitHub Pages
+                return this.vercel;
+            }
+        };
+        
+        // Telegram Configuration
+        const TELEGRAM_INFO = {
+            bot: "@ANONEDU_BOT",
+            publicChannel: "@ANON_EDU",
+            privateChannel: "-1001973930631",
+            publicLink: "https://t.me/ANON_EDU",
+            privateLink: "https://t.me/+oG9POSOSZes3MDJl"
+        };
+        
+        // GitHub Pages URL
+        const GITHUB_PAGES_URL = "https://avirus90.github.io/AnonEdu/";
+        
+        // Admin Email (from blueprint)
+        const ADMIN_EMAIL = "bimbadharbaghel0@gmail.com";
+        
+        // ==================== INITIALIZATION ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 EduAnon Platform - STEP 4 Frontend');
+            console.log('🌐 GitHub Pages:', GITHUB_PAGES_URL);
+            
+            // Display config info
+            document.getElementById('firebaseConfigCode').textContent = 
+                JSON.stringify(FIREBASE_CONFIG, null, 2);
+            
+            document.getElementById('telegramConfigCode').textContent = 
+                JSON.stringify(TELEGRAM_INFO, null, 2);
+            
+            // Set GitHub Pages info
+            document.title = "EduAnon - " + GITHUB_PAGES_URL;
+            
+            // Initialize Firebase
+            initializeFirebase();
+            
+            // Check backend status
+            checkBackendStatus();
+            
+            // Check if user is already logged in
+            checkExistingLogin();
+            
+            // Setup GitHub Pages mode
+            setupGitHubPagesMode();
+        });
+        
+        // ==================== FIREBASE INIT ====================
+        function initializeFirebase() {
+            try {
+                firebase.initializeApp(FIREBASE_CONFIG);
+                console.log('✅ Firebase initialized for GitHub Pages');
+                updateStatus('firebaseStatus', 'online');
+                
+                // Set up auth state listener
+                firebase.auth().onAuthStateChanged((user) => {
+                    if (user) {
+                        console.log('👤 User logged in:', user.email);
+                        redirectBasedOnRole(user.email);
+                    } else {
+                        console.log('👤 No user logged in');
+                    }
+                });
+                
+            } catch (error) {
+                console.error('❌ Firebase init error:', error);
+                updateStatus('firebaseStatus', 'offline');
+            }
+        }
+        
+        // ==================== GITHUB PAGES SETUP ====================
+        function setupGitHubPagesMode() {
+            console.log('🌐 Running on GitHub Pages:', window.location.href);
+            
+            // Update all internal links for GitHub Pages structure
+            updateLinksForGitHubPages();
+            
+            // Show GitHub Pages indicator
+            document.getElementById('backendUrl').textContent = 'Vercel (GitHub Mode)';
+            updateStatus('telegramStatus', 'online');
+            
+            // Add GitHub Pages specific event listeners
+            document.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A' && e.target.href.includes('index.html')) {
+                    // Ensure proper routing for GitHub Pages
+                    const href = e.target.getAttribute('href');
+                    if (href && !href.startsWith('http')) {
+                        e.preventDefault();
+                        window.location.href = href;
+                    }
+                }
+            });
+        }
+        
+        function updateLinksForGitHubPages() {
+            // GitHub Pages serves from root, so adjust paths
+            const links = document.querySelectorAll('a[href*=".html"]');
+            links.forEach(link => {
+                const href = link.getAttribute('href');
+                if (href && !href.startsWith('http')) {
+                    // Remove any leading slashes or dots for GitHub Pages
+                    const cleanHref = href.replace(/^\.\//, '').replace(/^\//, '');
+                    link.setAttribute('href', cleanHref);
+                }
+            });
+        }
+        
+        // ==================== AUTH FUNCTIONS ====================
+        async function loginAsStudent() {
+            try {
+                console.log('👨‍🎤 Student login initiated (GitHub Pages)');
+                
+                const provider = new firebase.auth.GoogleAuthProvider();
+                const result = await firebase.auth().signInWithPopup(provider);
+                
+                const user = result.user;
+                console.log('Student logged in:', user.email);
+                
+                // Check role and redirect
+                await checkUserRole(user.uid, user.email);
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('Login failed: ' + error.message);
+            }
+        }
+        
+        async function loginAsAdmin() {
+            try {
+                console.log('👨‍💼 Admin login initiated (GitHub Pages)');
+                
+                const provider = new firebase.auth.GoogleAuthProvider();
+                const result = await firebase.auth().signInWithPopup(provider);
+                
+                const user = result.user;
+                
+                // Verify admin email
+                if (user.email !== ADMIN_EMAIL) {
+                    alert('⚠️ This email is not authorized as admin.\nOnly ' + ADMIN_EMAIL + ' can login as admin.');
+                    await firebase.auth().signOut();
+                    return;
+                }
+                
+                console.log('Admin logged in:', user.email);
+                await checkUserRole(user.uid, user.email);
+                
+            } catch (error) {
+                console.error('Admin login error:', error);
+                alert('Admin login failed: ' + error.message);
+            }
+        }
+        
+        async function checkUserRole(userId, email) {
+            try {
+                // Try to get role from backend
+                const user = firebase.auth().currentUser;
+                if (!user) return;
+                
+                const token = await user.getIdToken();
+                
+                const response = await fetch(`${BACKEND_URLS.active}/api/user/role`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Role data:', data);
+                    
+                    // Redirect based on role
+                    if (data.role === 'admin') {
+                        window.location.href = 'admin/index.html';
+                    } else {
+                        window.location.href = 'student/index.html';
+                    }
+                } else {
+                    // Fallback: check email for admin
+                    redirectBasedOnRole(email);
+                }
+                
+            } catch (error) {
+                console.log('Role check failed, using fallback:', error);
+                redirectBasedOnRole(email);
+            }
+        }
+        
+        function redirectBasedOnRole(email) {
+            if (email === ADMIN_EMAIL) {
+                window.location.href = 'admin/index.html';
+            } else {
+                window.location.href = 'student/index.html';
+            }
+        }
+        
+        function checkExistingLogin() {
+            const user = firebase.auth().currentUser;
+            if (user) {
+                console.log('Already logged in:', user.email);
+                redirectBasedOnRole(user.email);
+            }
+        }
+        
+        function tryDemo() {
+            // Demo mode - set session flag
+            sessionStorage.setItem('edu_demo_mode', 'true');
+            window.location.href = 'student/index.html?demo=true';
+        }
+        
+        // ==================== STATUS CHECKS ====================
+        async function checkBackendStatus() {
+            try {
+                const response = await fetch(`${BACKEND_URLS.vercel}/api/test`);
+                
+                if (response.ok) {
+                    updateStatus('backendStatus', 'online');
+                    document.getElementById('backendUrl').textContent = 'Vercel ✓';
+                } else {
+                    updateStatus('backendStatus', 'offline');
+                }
+            } catch (error) {
+                console.log('Backend check failed:', error.message);
+                updateStatus('backendStatus', 'offline');
+            }
+        }
+        
+        function updateStatus(elementId, status) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.className = `status-indicator ${status}`;
+            }
+        }
+        
+        // ==================== UTILITY FUNCTIONS ====================
+        function showSystemInfo() {
+            const modal = new bootstrap.Modal(document.getElementById('systemInfoModal'));
+            modal.show();
+        }
+        
+        // Auto-refresh status every 30 seconds
+        setInterval(checkBackendStatus, 30000);
+        
+        // Initial check
+        checkBackendStatus();
+    </script>
+</body>
+</html>
