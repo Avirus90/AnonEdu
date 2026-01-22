@@ -36,13 +36,13 @@ class AdminPanel {
             
         } catch (error) {
             console.error('Dashboard load error:', error);
-            showError('Failed to load dashboard');
+            this.showError('Failed to load dashboard');
         }
     }
     
     async loadTelegramFilesCount() {
         try {
-            const response = await fetch(`${BACKEND_URL}/api/files`);
+            const response = await fetch(`${BACKEND_URLS.active}/api/files`);
             if (response.ok) {
                 const data = await response.json();
                 document.getElementById('telegramFiles').textContent = 
@@ -86,15 +86,15 @@ class AdminPanel {
                                 <p class="card-text text-muted">${course.description || 'No description'}</p>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <small class="text-muted">
-                                        Created: ${new Date(course.createdAt?.toDate()).toLocaleDateString()}
+                                        Created: ${course.createdAt ? new Date(course.createdAt?.toDate()).toLocaleDateString() : 'N/A'}
                                     </small>
                                     <div class="btn-group btn-group-sm">
                                         <button class="btn btn-outline-primary" 
-                                                onclick="viewCourse('${course.id}')">
+                                                onclick="adminPanel.viewCourse('${course.id}')">
                                             <i class="fas fa-eye"></i> View
                                         </button>
                                         <button class="btn btn-outline-warning" 
-                                                onclick="editCourse('${course.id}')">
+                                                onclick="adminPanel.editCourse('${course.id}')">
                                             <i class="fas fa-edit"></i> Edit
                                         </button>
                                     </div>
@@ -109,7 +109,7 @@ class AdminPanel {
             
         } catch (error) {
             console.error('Load courses error:', error);
-            showError('Failed to load courses');
+            this.showError('Failed to load courses');
         }
     }
     
@@ -117,7 +117,7 @@ class AdminPanel {
         try {
             if (!confirm('Sync files from Telegram channel?')) return;
             
-            const token = await auth.getToken();
+            const token = await eduAuth?.getToken();
             if (!token) throw new Error('Not authenticated');
             
             // First, check if we have a course
@@ -131,7 +131,7 @@ class AdminPanel {
             // Use first course for sync
             const courseId = coursesSnap.docs[0].id;
             
-            const response = await fetch(`${BACKEND_URL}/api/admin/sync-telegram`, {
+            const response = await fetch(`${BACKEND_URLS.active}/api/admin/sync-telegram`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -164,14 +164,14 @@ class AdminPanel {
                 return;
             }
             
-            const token = await auth.getToken();
+            const token = await eduAuth?.getToken();
             if (!token) throw new Error('Not authenticated');
             
             const courseData = {
                 title,
                 description,
                 isPublished: true,
-                createdBy: auth.currentUser.uid,
+                createdBy: eduAuth.currentUser.uid,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 telegramChannelId: '-1001973930631'
             };
@@ -179,8 +179,9 @@ class AdminPanel {
             await this.db.collection('courses').add(courseData);
             
             // Close modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('createCourseModal'));
-            modal.hide();
+            const modalElement = document.getElementById('createCourseModal');
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) modal.hide();
             
             // Reset form
             document.getElementById('courseForm').reset();
@@ -188,7 +189,7 @@ class AdminPanel {
             // Reload courses
             this.loadDashboard();
             
-            showSuccess('Course created successfully');
+            this.showSuccess('Course created successfully');
             
         } catch (error) {
             console.error('Save course error:', error);
@@ -199,8 +200,7 @@ class AdminPanel {
     async viewCourse(courseId) {
         // Save course ID to session
         sessionStorage.setItem('currentCourseId', courseId);
-        // Redirect to course content page (will create in STEP 5.1)
-        window.location.href = `course.html?id=${courseId}`;
+        alert('View course functionality will be implemented');
     }
     
     async editCourse(courseId) {
@@ -218,44 +218,51 @@ class AdminPanel {
             '<i class="fas fa-edit"></i> Edit Course';
         document.querySelector('#createCourseModal .modal-footer button.btn-primary').innerHTML = 
             '<i class="fas fa-save"></i> Update Course';
-        
-        // Store course ID for update
-        document.getElementById('createCourseModal').dataset.courseId = courseId;
+        document.querySelector('#createCourseModal .modal-footer button.btn-primary').setAttribute('onclick', `adminPanel.updateCourse('${courseId}')`);
     }
-}
-
-// Helper functions
-function showCreateCourse() {
-    const modal = new bootstrap.Modal(document.getElementById('createCourseModal'));
-    modal.show();
     
-    // Reset modal for creation
-    document.querySelector('#createCourseModal .modal-title').innerHTML = 
-        '<i class="fas fa-plus"></i> Create Course';
-    document.querySelector('#createCourseModal .modal-footer button.btn-primary').innerHTML = 
-        '<i class="fas fa-save"></i> Create Course';
-    document.getElementById('courseForm').reset();
-    delete document.getElementById('createCourseModal').dataset.courseId;
-}
-
-function syncTelegramFiles() {
-    window.adminPanel.syncTelegramFiles();
-}
-
-function saveCourse() {
-    window.adminPanel.saveCourse();
-}
-
-function loadCourses() {
-    window.adminPanel.loadCourses();
-}
-
-function showError(message) {
-    alert('Error: ' + message);
-}
-
-function showSuccess(message) {
-    alert('Success: ' + message);
+    async updateCourse(courseId) {
+        try {
+            const title = document.getElementById('courseTitle').value.trim();
+            const description = document.getElementById('courseDescription').value.trim();
+            
+            if (!title) {
+                alert('Course title is required');
+                return;
+            }
+            
+            await this.db.collection('courses').doc(courseId).update({
+                title,
+                description,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            // Close modal
+            const modalElement = document.getElementById('createCourseModal');
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) modal.hide();
+            
+            // Reset form
+            document.getElementById('courseForm').reset();
+            
+            // Reload courses
+            this.loadDashboard();
+            
+            this.showSuccess('Course updated successfully');
+            
+        } catch (error) {
+            console.error('Update course error:', error);
+            alert('Failed to update course: ' + error.message);
+        }
+    }
+    
+    showError(message) {
+        alert('Error: ' + message);
+    }
+    
+    showSuccess(message) {
+        alert('Success: ' + message);
+    }
 }
 
 // Initialize
@@ -263,9 +270,4 @@ let adminPanel = null;
 document.addEventListener('DOMContentLoaded', function() {
     adminPanel = new AdminPanel();
     window.adminPanel = adminPanel;
-    
-    // Check if user is admin
-    if (auth && auth.currentUser && auth.currentUser.email === ADMIN_EMAIL) {
-        adminPanel.loadDashboard();
-    }
 });
