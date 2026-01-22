@@ -9,17 +9,168 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="shared/security.js"></script>
     
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Our CSS -->
-    <link rel="stylesheet" href="student.css">
+    <!-- Student CSS -->
+    <style>
+        /* Student Panel Styles */
+        :root {
+            --student-primary: #3498db;
+            --student-secondary: #2ecc71;
+            --student-accent: #9b59b6;
+        }
+
+        .student-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .student-header {
+            background: linear-gradient(135deg, var(--student-primary) 0%, var(--student-accent) 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+        }
+
+        .course-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .course-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        .course-card-header {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 2px solid #e9ecef;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .course-card-body {
+            padding: 25px;
+        }
+
+        .content-item {
+            padding: 15px;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.2s;
+        }
+
+        .content-item:hover {
+            background: #f8f9fa;
+            border-color: var(--student-primary);
+        }
+
+        .content-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--student-primary);
+            color: white;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--student-secondary);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .viewer-container {
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .viewer-container iframe {
+            width: 100%;
+            height: 600px;
+            border: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .student-container {
+                padding: 10px;
+            }
+            
+            .student-header {
+                padding: 20px;
+            }
+            
+            .course-card-body {
+                padding: 15px;
+            }
+            
+            .content-item {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .viewer-container iframe {
+                height: 400px;
+            }
+        }
+    </style>
     
     <!-- Shared Config -->
-    <script src="../shared/firebase-config.js"></script>
+    <script>
+        // Inline config
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyDuoHlw9Op4ZHbSvT3JQfoSWJFa0rjelz4",
+            authDomain: "eduanon-835f9.firebaseapp.com",
+            projectId: "eduanon-835f9",
+            storageBucket: "eduanon-835f9.firebasestorage.app",
+            messagingSenderId: "378269868239",
+            appId: "1:378269868239:web:951d8ca35fd252313dd7ba"
+        };
+        
+        const BACKEND_URLS = {
+            local: "http://localhost:3000",
+            vercel: "https://telegram-backend-rq82.vercel.app",
+            get active() {
+                return window.location.hostname.includes('github.io') ? this.vercel : this.local;
+            }
+        };
+        
+        const ADMIN_EMAIL = "bimbadharbaghel0@gmail.com";
+        
+        window.FIREBASE_CONFIG = FIREBASE_CONFIG;
+        window.BACKEND_URL = BACKEND_URLS.active;
+        window.BACKEND_URLS = BACKEND_URLS;
+        window.ADMIN_EMAIL = ADMIN_EMAIL;
+    </script>
 </head>
 <body>
     <!-- Navigation -->
@@ -30,7 +181,7 @@
             </a>
             <div class="d-flex align-items-center">
                 <span class="text-light me-3" id="studentEmail">Loading...</span>
-                <button class="btn btn-outline-light btn-sm" onclick="auth.logout()">
+                <button class="btn btn-outline-light btn-sm" onclick="eduAuth.logout()">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
             </div>
@@ -186,15 +337,31 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../shared/auth.js"></script>
-    <script src="../shared/utils.js"></script>
-    <script src="student.js"></script>
+    <script src="auth(shared).js"></script>
+    <script src="student(student).js"></script>
     
     <script>
         // Check if demo mode
         const isDemo = sessionStorage.getItem('edu_demo_mode') === 'true';
         if (isDemo) {
             document.getElementById('demoAlert').style.display = 'block';
+        }
+        
+        // Global functions
+        function viewPDFs() {
+            alert('PDF viewer will open soon');
+        }
+        
+        function viewVideos() {
+            alert('Video lectures will open soon');
+        }
+        
+        function viewMockTests() {
+            window.location.href = 'test.html';
+        }
+        
+        function viewLiveClasses() {
+            window.location.href = 'live.html';
         }
     </script>
 </body>
