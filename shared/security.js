@@ -12,7 +12,6 @@ class SecuritySystem {
     }
     
     initSecurity() {
-        // Apply security measures
         this.disableRightClick();
         this.disableKeyboardShortcuts();
         this.preventDragAndDrop();
@@ -189,21 +188,13 @@ class SecuritySystem {
     setupRouteGuards() {
         if (!this.routeProtectionEnabled) return;
         
-        // Protect against direct file access
         this.protectDirectFileAccess();
-        
-        // Protect admin routes
         this.protectAdminRoutes();
-        
-        // Protect student routes
         this.protectStudentRoutes();
-        
-        // Session timeout
         this.setupSessionTimeout();
     }
     
     protectDirectFileAccess() {
-        // Block common file extensions
         const blockedExtensions = ['.php', '.asp', '.aspx', '.jsp', '.py', '.rb', '.pl', '.cgi', '.sh'];
         
         window.addEventListener('beforeunload', (e) => {
@@ -223,7 +214,6 @@ class SecuritySystem {
         const currentPath = window.location.pathname;
         
         if (currentPath.includes('/admin/')) {
-            // Check if user is authenticated and is admin
             const checkAdminAccess = () => {
                 if (!auth || !auth.currentUser) {
                     window.location.href = '../index.html';
@@ -245,10 +235,8 @@ class SecuritySystem {
                 return true;
             };
             
-            // Initial check
             if (!checkAdminAccess()) return;
             
-            // Periodic check every 30 seconds
             setInterval(checkAdminAccess, 30000);
         }
     }
@@ -261,7 +249,6 @@ class SecuritySystem {
             !currentPath.endsWith('test.html') &&
             !currentPath.endsWith('live.html')) {
             
-            // Check if user is authenticated or in demo mode
             const checkStudentAccess = () => {
                 const isDemo = sessionStorage.getItem('edu_demo_mode') === 'true';
                 
@@ -270,9 +257,7 @@ class SecuritySystem {
                     return false;
                 }
                 
-                // Prevent admin from accessing certain student features
                 if (auth.currentUser && auth.currentUser.email === ADMIN_EMAIL) {
-                    // Allow admin to view but log it
                     this.logSecurityEvent('ADMIN_VIEWING_STUDENT', {
                         email: auth.currentUser.email,
                         path: currentPath,
@@ -283,10 +268,8 @@ class SecuritySystem {
                 return true;
             };
             
-            // Initial check
             if (!checkStudentAccess()) return;
             
-            // Periodic check
             setInterval(checkStudentAccess, 30000);
         }
     }
@@ -302,7 +285,6 @@ class SecuritySystem {
             }, timeoutDuration);
         };
         
-        // Reset on user activity
         ['click', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(event => {
             document.addEventListener(event, resetTimer);
         });
@@ -330,7 +312,6 @@ class SecuritySystem {
     setupActivityMonitor() {
         if (!this.abuseDetectionEnabled) return;
         
-        // Track rapid clicks (potential bot activity)
         let clickCount = 0;
         let lastClickTime = 0;
         
@@ -338,17 +319,16 @@ class SecuritySystem {
             const now = Date.now();
             const timeDiff = now - lastClickTime;
             
-            if (timeDiff < 100) { // Less than 100ms between clicks
+            if (timeDiff < 100) {
                 clickCount++;
                 
-                if (clickCount > 10) { // More than 10 rapid clicks
+                if (clickCount > 10) {
                     this.detectAbuse('RAPID_CLICKING', {
                         count: clickCount,
                         element: e.target.tagName,
                         timestamp: new Date().toISOString()
                     });
                     
-                    // Slow down the user
                     this.throttleUser();
                     clickCount = 0;
                 }
@@ -359,13 +339,11 @@ class SecuritySystem {
             lastClickTime = now;
         });
         
-        // Track form submissions
         document.addEventListener('submit', (e) => {
             const formId = e.target.id || 'unknown_form';
             this.trackFormSubmission(formId);
         });
         
-        // Track API calls
         this.monitorAPICalls();
     }
     
@@ -376,7 +354,6 @@ class SecuritySystem {
             const url = args[0];
             const options = args[1] || {};
             
-            // Log API calls (except Firebase calls)
             if (typeof url === 'string' && 
                 !url.includes('firebase') && 
                 !url.includes('googleapis')) {
@@ -387,9 +364,8 @@ class SecuritySystem {
                     timestamp: new Date().toISOString()
                 });
                 
-                // Rate limiting check
                 const key = `api_call_${url}`;
-                if (!window.security?.checkRateLimit(key, 10, 60000)) { // 10 calls per minute
+                if (!window.security?.checkRateLimit(key, 10, 60000)) {
                     throw new Error('Rate limit exceeded. Please try again later.');
                 }
             }
@@ -412,14 +388,12 @@ class SecuritySystem {
         
         const formData = this.failedAttempts[key];
         
-        // Check if locked
         if (now < formData.lockedUntil) {
             const remainingTime = Math.ceil((formData.lockedUntil - now) / 1000);
             throw new Error(`Too many attempts. Try again in ${remainingTime} seconds.`);
         }
         
-        // Check rate limit
-        const timeWindow = 5 * 60 * 1000; // 5 minutes
+        const timeWindow = 5 * 60 * 1000;
         if (now - formData.lastAttempt < timeWindow) {
             formData.count++;
         } else {
@@ -428,7 +402,6 @@ class SecuritySystem {
         
         formData.lastAttempt = now;
         
-        // Lock if too many attempts
         if (formData.count >= this.maxFailedAttempts) {
             formData.lockedUntil = now + this.lockoutTime;
             this.logSecurityEvent('FORM_LOCKOUT', {
@@ -453,15 +426,12 @@ class SecuritySystem {
         
         const data = this.failedAttempts[key];
         
-        // Check if locked
         if (now < data.lockedUntil) {
             return false;
         }
         
-        // Filter attempts within time window
         data.attempts = data.attempts.filter(time => now - time < timeWindow);
         
-        // Check if max attempts reached
         if (data.attempts.length >= maxAttempts) {
             data.lockedUntil = now + this.lockoutTime;
             this.logSecurityEvent('RATE_LIMIT_EXCEEDED', {
@@ -472,7 +442,6 @@ class SecuritySystem {
             return false;
         }
         
-        // Add current attempt
         data.attempts.push(now);
         return true;
     }
@@ -487,23 +456,19 @@ class SecuritySystem {
             url: window.location.href
         });
         
-        // Take action based on abuse type
         switch (type) {
             case 'RAPID_CLICKING':
                 this.showSecurityWarning('Please slow down your interactions');
                 break;
-                
             case 'MULTIPLE_TABS':
                 this.showSecurityWarning('Please use only one tab at a time');
                 break;
-                
             default:
                 this.showSecurityWarning('Suspicious activity detected');
         }
     }
     
     throttleUser() {
-        // Add a delay to user interactions
         const elements = document.querySelectorAll('button, a, input');
         elements.forEach(el => {
             const originalClick = el.onclick;
@@ -512,11 +477,10 @@ class SecuritySystem {
                 e.preventDefault();
                 setTimeout(() => {
                     if (originalClick) originalClick.call(el, e);
-                }, 1000); // 1 second delay
+                }, 1000);
             };
         });
         
-        // Remove throttle after 30 seconds
         setTimeout(() => {
             elements.forEach(el => {
                 el.onclick = null;
@@ -527,15 +491,11 @@ class SecuritySystem {
     // ==================== SECURITY LOGGING ====================
     
     logSecurityEvent(eventType, data) {
-        // Log to console in development
         if (window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1')) {
             console.log(`🔐 Security Event: ${eventType}`, data);
         }
         
-        // Send to backend if available
         this.sendSecurityLog(eventType, data);
-        
-        // Store locally
         this.storeSecurityEvent(eventType, data);
     }
     
@@ -544,7 +504,7 @@ class SecuritySystem {
             const token = await auth?.getToken();
             if (!token) return;
             
-            await fetch(`${BACKEND_URL}/api/security/log`, {
+            await fetch(`${BACKEND_URLS.active}/api/security/log`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -559,7 +519,6 @@ class SecuritySystem {
                 })
             });
         } catch (error) {
-            // Silent fail - security logging shouldn't break the app
             console.error('Security log error:', error);
         }
     }
@@ -573,7 +532,6 @@ class SecuritySystem {
                 timestamp: new Date().toISOString()
             });
             
-            // Keep only last 100 events
             if (events.length > 100) {
                 events.splice(0, events.length - 100);
             }
@@ -587,7 +545,6 @@ class SecuritySystem {
     // ==================== UTILITIES ====================
     
     showSecurityWarning(message) {
-        // Create warning toast
         const toast = document.createElement('div');
         toast.className = 'security-warning-toast';
         toast.innerHTML = `
@@ -597,7 +554,6 @@ class SecuritySystem {
             </div>
         `;
         
-        // Add styles if not already added
         if (!document.querySelector('#security-toast-style')) {
             const style = document.createElement('style');
             style.id = 'security-toast-style';
@@ -616,7 +572,6 @@ class SecuritySystem {
         
         document.body.appendChild(toast);
         
-        // Auto remove after 5 seconds
         setTimeout(() => {
             if (toast.parentNode) {
                 toast.parentNode.removeChild(toast);
@@ -626,12 +581,11 @@ class SecuritySystem {
     
     getSecurityReport() {
         const events = JSON.parse(localStorage.getItem('security_events') || '[]');
-        const failedAttempts = this.failedAttempts;
         
         return {
             totalEvents: events.length,
             recentEvents: events.slice(-10),
-            failedAttempts: failedAttempts,
+            failedAttempts: this.failedAttempts,
             settings: {
                 antiDownload: this.antiDownloadEnabled,
                 routeProtection: this.routeProtectionEnabled,
@@ -690,6 +644,5 @@ document.addEventListener('DOMContentLoaded', function() {
     security = new SecuritySystem();
     window.security = security;
     
-    // Make security report available globally
     window.getSecurityReport = () => security.getSecurityReport();
 });
