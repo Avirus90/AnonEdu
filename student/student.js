@@ -12,21 +12,21 @@ class StudentPanel {
             firebase.initializeApp(FIREBASE_CONFIG);
         }
         this.db = firebase.firestore();
-        this.userId = auth?.currentUser?.uid;
+        this.userId = eduAuth?.currentUser?.uid;
     }
     
     checkAccess() {
-        if (!auth || !auth.currentUser) {
+        if (!eduAuth || !eduAuth.currentUser) {
             // Check if demo mode
             if (sessionStorage.getItem('edu_demo_mode') !== 'true') {
                 window.location.href = '../index.html';
             }
         } else {
             // Show user email
-            document.getElementById('studentEmail').textContent = auth.currentUser.email;
+            document.getElementById('studentEmail').textContent = eduAuth.currentUser.email;
             
             // Check if trying to access as admin
-            if (auth.currentUser.email === ADMIN_EMAIL) {
+            if (eduAuth.currentUser.email === ADMIN_EMAIL) {
                 console.log('Admin accessing student view');
             }
         }
@@ -44,7 +44,7 @@ class StudentPanel {
             
         } catch (error) {
             console.error('Dashboard load error:', error);
-            showToast('Failed to load content', 'danger');
+            this.showToast('Failed to load content', 'danger');
         }
     }
     
@@ -96,11 +96,11 @@ class StudentPanel {
                                 
                                 <div class="d-grid gap-2">
                                     <button class="btn btn-primary" 
-                                            onclick="viewCourseContent('${course.id}')">
+                                            onclick="studentPanel.viewCourseContent('${course.id}')">
                                         <i class="fas fa-play"></i> Start Learning
                                     </button>
                                     <button class="btn btn-outline-secondary" 
-                                            onclick="viewCourseInfo('${course.id}')">
+                                            onclick="studentPanel.viewCourseInfo('${course.id}')">
                                         <i class="fas fa-info-circle"></i> Details
                                     </button>
                                 </div>
@@ -114,6 +114,7 @@ class StudentPanel {
             
         } catch (error) {
             console.error('Load courses error:', error);
+            const coursesList = document.getElementById('coursesList');
             coursesList.innerHTML = `
                 <div class="col-12 text-center py-5">
                     <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
@@ -145,7 +146,7 @@ class StudentPanel {
                 // Store progress for each course
                 this.progress[courseId] = {
                     completed: data.completedContent?.length || 0,
-                    total: 0 // Will update when we load course content
+                    total: 0
                 };
                 
                 totalViewed += data.completedContent?.length || 0;
@@ -183,28 +184,35 @@ class StudentPanel {
                 .get();
             
             if (contentSnap.empty) {
-                showToast('No content available for this course', 'warning');
+                this.showToast('No content available for this course', 'warning');
                 return;
             }
             
             // Show first content item
-            const firstContent = contentSnap.docs[0].data();
+            const firstDoc = contentSnap.docs[0];
+            const firstContent = { id: firstDoc.id, ...firstDoc.data() };
             this.showContentViewer(firstContent);
             
         } catch (error) {
             console.error('View course error:', error);
-            showToast('Failed to load course content', 'danger');
+            this.showToast('Failed to load course content', 'danger');
         }
     }
     
     async showContentViewer(content) {
         try {
             // Get file from backend
-            const token = await auth?.getToken();
+            const token = await eduAuth?.getToken();
             const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
             
+            // For demo, use sample content
+            if (sessionStorage.getItem('edu_demo_mode') === 'true') {
+                this.showDemoContent(content);
+                return;
+            }
+            
             const response = await fetch(
-                `${BACKEND_URL}/api/telegram/file/${content.telegramFileId}?viewer=google`,
+                `${BACKEND_URLS.active}/api/telegram/file/${content.telegramFileId}?viewer=google`,
                 { headers }
             );
             
@@ -217,12 +225,12 @@ class StudentPanel {
             document.getElementById('viewerTitle').textContent = content.title;
             
             let viewerHtml = '';
-            const fileType = content.type.toLowerCase();
+            const fileType = content.type ? content.type.toLowerCase() : 'pdf';
             
             if (fileType === 'pdf' || fileType === 'ppt' || fileType === 'pptx') {
                 // Google Docs Viewer
                 viewerHtml = `
-                    <iframe src="${data.url}" 
+                    <iframe src="${data.url || 'https://docs.google.com/viewer?url=https://example.com/sample.pdf&embedded=true'}" 
                             style="width:100%; height:600px; border:none;"
                             frameborder="0"
                             allow="autoplay"
@@ -235,7 +243,7 @@ class StudentPanel {
                 // Image viewer
                 viewerHtml = `
                     <div class="text-center">
-                        <img src="${data.url}" 
+                        <img src="${data.url || 'https://via.placeholder.com/600x400?text=Sample+Image'}" 
                              class="img-fluid"
                              style="max-height: 600px;"
                              oncontextmenu="return false"
@@ -249,7 +257,7 @@ class StudentPanel {
                         <video controls controlsList="nodownload" 
                                style="max-width: 100%; max-height: 600px;"
                                oncontextmenu="return false">
-                            <source src="${data.url}" type="video/mp4">
+                            <source src="${data.url || 'https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4'}" type="video/mp4">
                             Your browser does not support the video tag.
                         </video>
                     </div>
@@ -284,6 +292,30 @@ class StudentPanel {
         }
     }
     
+    showDemoContent(content) {
+        const modal = new bootstrap.Modal(document.getElementById('contentViewerModal'));
+        document.getElementById('viewerTitle').textContent = content.title + ' (Demo)';
+        
+        const viewerHtml = `
+            <div class="text-center py-5">
+                <i class="fas fa-eye fa-3x text-warning mb-3"></i>
+                <h5>Demo Preview</h5>
+                <p class="text-muted">In the full version, you would see the actual content here.</p>
+                <div class="mt-4">
+                    <p><strong>Content Type:</strong> ${content.type || 'PDF'}</p>
+                    <p><strong>Description:</strong> This is sample content for demonstration.</p>
+                </div>
+                <div class="alert alert-info mt-4">
+                    <i class="fas fa-info-circle"></i> 
+                    Login to access real content from Telegram storage.
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('viewerContent').innerHTML = viewerHtml;
+        modal.show();
+    }
+    
     async trackContentViewed(contentId, courseId) {
         try {
             if (!this.userId) return;
@@ -300,31 +332,17 @@ class StudentPanel {
             console.error('Track view error:', error);
         }
     }
-}
-
-// Helper functions
-function showToast(message, type = 'info') {
-    alert(message); // Simple alert for now
-}
-
-function viewCourseContent(courseId) {
-    window.studentPanel.viewCourseContent(courseId);
-}
-
-function viewPDFs() {
-    showToast('PDF viewer will open soon', 'info');
-}
-
-function viewVideos() {
-    showToast('Video lectures will open soon', 'info');
-}
-
-function viewMockTests() {
-    showToast('Mock tests will open soon', 'info');
-}
-
-function viewLiveClasses() {
-    showToast('Live classes will open soon', 'info');
+    
+    viewCourseInfo(courseId) {
+        const course = this.courses.find(c => c.id === courseId);
+        if (course) {
+            alert(`Course Details:\n\nTitle: ${course.title}\n\nDescription: ${course.description || 'No description'}`);
+        }
+    }
+    
+    showToast(message, type = 'info') {
+        alert(message); // Simple alert for now
+    }
 }
 
 // Initialize
@@ -336,5 +354,5 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load dashboard after a short delay
     setTimeout(() => {
         studentPanel.loadDashboard();
-    }, 500);
+    }, 1000);
 });
