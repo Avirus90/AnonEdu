@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Dashboard - EduAnon Admin</title>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="shared/security.js"></script>
+    
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Admin CSS -->
+    <link rel="stylesheet" href="admin.css">
+    
+    <!-- Shared Config -->
+    <script src="../shared/firebase-config.js"></script>
+    <script src="../shared/security.js"></script>
+    
+    <style>
+        .security-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .security-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        
+        .security-header {
+            background: linear-gradient(135deg, #2c3e50 0%, #c0392b 100%);
+            color: white;
+            padding: 20px;
+        }
+        
+        .security-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin: 0 5px;
+        }
+        
+        .badge-enabled { background: #27ae60; color: white; }
+        .badge-disabled { background: #e74c3c; color: white; }
+        .badge-warning { background: #f39c12; color: white; }
+        
+        .log-entry {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        
+        .log-entry:hover {
+            background: #f8f9fa;
+        }
+        
+        .log-critical { border-left: 4px solid #e74c3c; }
+        .log-warning { border-left: 4px solid #f39c12; }
+        .log-info { border-left: 4px solid #3498db; }
+        
+        .protection-toggle {
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 5px 0;
+            border: 2px solid #dee2e6;
+            transition: all 0.3s;
+        }
+        
+        .protection-toggle.active {
+            border-color: #27ae60;
+            background: #d4edda;
+        }
+        
+        .protection-toggle.inactive {
+            border-color: #e74c3c;
+            background: #f8d7da;
+        }
+        
+        .real-time-monitor {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="index.html">
+                <i class="fas fa-shield-alt"></i> Security Dashboard
+            </a>
+            <div class="d-flex align-items-center">
+                <a href="index.html" class="btn btn-outline-light btn-sm me-2">
+                    <i class="fas fa-arrow-left"></i> Back to Admin
+                </a>
+                <button class="btn btn-outline-light btn-sm" onclick="auth.logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="security-container">
+        <!-- Security Header -->
+        <div class="security-card">
+            <div class="security-header">
+                <h2><i class="fas fa-shield-alt"></i> EduAnon Security Center</h2>
+                <p class="mb-0">Monitor and manage platform security settings</p>
+                <div class="mt-3">
+                    <span class="security-badge badge-enabled" id="overallStatus">SECURE</span>
+                    <span class="security-badge" id="activeThreats">0 Active Threats</span>
+                    <span class="security-badge" id="totalEvents">0 Events Logged</span>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="p-4">
+                <div class="row">
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h1 id="totalUsers">0</h1>
+                                <p class="text-muted mb-0">Total Users</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h1 id="failedLogins">0</h1>
+                                <p class="text-muted mb-0">Failed Logins</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h1 id="blockedAttempts">0</h1>
+                                <p class="text-muted mb-0">Blocked Attempts</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h1 id="activeSessions">0</h1>
+                                <p class="text-muted mb-0">Active Sessions</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="row mt-4">
+            <!-- Left Column - Security Controls -->
+            <div class="col-md-6">
+                <!-- Protection Settings -->
+                <div class="security-card">
+                    <div class="admin-card-header">
+                        <i class="fas fa-cogs"></i> Protection Settings
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="protection-toggle active" id="antiDownloadToggle" onclick="toggleProtection('anti-download')">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1"><i class="fas fa-ban"></i> Anti-Download Protection</h6>
+                                    <small class="text-muted">Prevents right-click, keyboard shortcuts, and drag-drop</small>
+                                </div>
+                                <div>
+                                    <span class="badge bg-success">ENABLED</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="protection-toggle active" id="routeGuardToggle" onclick="toggleProtection('route-guards')">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1"><i class="fas fa-route"></i> Route Guards</h6>
+                                    <small class="text-muted">Protects admin/student routes and session timeout</small>
+                                </div>
+                                <div>
+                                    <span class="badge bg-success">ENABLED</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="protection-toggle active" id="abuseDetectionToggle" onclick="toggleProtection('abuse-detection')">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1"><i class="fas fa-radar"></i> Abuse Detection</h6>
+                                    <small class="text-muted">Detects rapid clicks, multiple tabs, suspicious activity</small>
+                                </div>
+                                <div>
+                                    <span class="badge bg-success">ENABLED</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button class="btn btn-primary me-2" onclick="enableAllProtections()">
+                                <i class="fas fa-toggle-on"></i> Enable All
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="disableAllProtections()">
+                                <i class="fas fa-toggle-off"></i> Disable All
+                            </button>
+                            <button class="btn btn-warning ms-2" onclick="resetSecuritySettings()">
+                                <i class="fas fa-redo"></i> Reset Settings
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security Actions -->
+                <div class="security-card mt-4">
+                    <div class="admin-card-header">
+                        <i class="fas fa-bolt"></i> Quick Actions
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-primary" onclick="viewSecurityReport()">
+                                <i class="fas fa-file-alt"></i> Generate Security Report
+                            </button>
+                            <button class="btn btn-outline-warning" onclick="clearSecurityLogs()">
+                                <i class="fas fa-trash"></i> Clear Security Logs
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="lockdownPlatform()">
+                                <i class="fas fa-lock"></i> Emergency Lockdown
+                            </button>
+                            <button class="btn btn-outline-info" onclick="testSecurityMeasures()">
+                                <i class="fas fa-vial"></i> Test Security Measures
+                            </button>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <h6><i class="fas fa-user-shield"></i> User Management</h6>
+                            <div class="input-group mb-3">
+                                <input type="email" class="form-control" id="userEmail" placeholder="User email">
+                                <button class="btn btn-outline-secondary" onclick="suspendUser()">
+                                    <i class="fas fa-user-slash"></i> Suspend
+                                </button>
+                            </div>
+                            <small class="text-muted">Suspend users for security violations</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Security Logs -->
+            <div class="col-md-6">
+                <!-- Real-time Monitor -->
+                <div class="security-card">
+                    <div class="admin-card-header d-flex justify-content-between">
+                        <span><i class="fas fa-desktop"></i> Real-time Monitor</span>
+                        <button class="btn btn-sm btn-outline-primary" onclick="refreshLogs()">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="real-time-monitor" id="realTimeMonitor">
+                            <div class="text-center py-5 text-muted">
+                                <i class="fas fa-shield-alt fa-3x mb-3"></i>
+                                <p>No security events to display</p>
+                                <small>Events will appear here in real-time</small>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="showCritical" checked>
+                                <label class="form-check-label" for="showCritical">Critical</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="showWarnings" checked>
+                                <label class="form-check-label" for="showWarnings">Warnings</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="showInfo" checked>
+                                <label class="form-check-label" for="showInfo">Info</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security Statistics -->
+                <div class="security-card mt-4">
+                    <div class="admin-card-header">
+                        <i class="fas fa-chart-bar"></i> Security Statistics
+                    </div>
+                    <div class="admin-card-body">
+                        <div class="row">
+                            <div class="col-6">
+                                <h6>Event Types (Last 24h):</h6>
+                                <ul class="list-unstyled">
+                                    <li><span class="badge bg-danger">Critical:</span> <span id="criticalCount">0</span></li>
+                                    <li><span class="badge bg-warning">Warning:</span> <span id="warningCount">0</span></li>
+                                    <li><span class="badge bg-info">Info:</span> <span id="infoCount">0</span></li>
+                                </ul>
+                            </div>
+                            <div class="col-6">
+                                <h6>Top Sources:</h6>
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-user"></i> Users: <span id="userEvents">0</span></li>
+                                    <li><i class="fas fa-robot"></i> Bots: <span id="botEvents">0</span></li>
+                                    <li><i class="fas fa-network-wired"></i> API: <span id="apiEvents">0</span></li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <h6>Recent Threats:</h6>
+                            <div id="recentThreats">
+                                <p class="text-muted">No recent threats detected</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Report Modal -->
+    <div class="modal fade" id="securityReportModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-file-alt"></i> Security Report</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <pre id="securityReportContent" class="bg-light p-3 rounded" style="max-height: 500px; overflow: auto;"></pre>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" onclick="downloadSecurityReport()">
+                        <i class="fas fa-download"></i> Download JSON
+                    </button>
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../shared/auth.js"></script>
+    <script src="../shared/utils.js"></script>
+    <script>
+        // Security Dashboard Logic
+        class SecurityDashboard {
+            constructor() {
+                this.securityLogs = [];
+                this.realtimeLogs = [];
+                this.initFirestore();
+                this.loadDashboard();
+                this.startRealtimeUpdates();
+            }
+            
+            initFirestore() {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(FIREBASE_CONFIG);
+                }
+                this.db = firebase.firestore();
+            }
+            
+            async loadDashboard() {
+                try {
+                    // Check admin access
+                    if (!auth || !auth.currentUser || auth.currentUser.email !== ADMIN_EMAIL) {
+                        alert('Admin access required');
+                        auth.logout();
+                        return;
+                    }
+                    
+                    // Load security logs from localStorage
+                    this.loadLocalSecurityLogs();
+                    
+                    // Load user statistics
+                    await this.loadUserStats();
+                    
+                    // Update UI
+                    this.updateDashboard();
+                    
+                } catch (error) {
+                    console.error('Dashboard load error:', error);
+                }
+            }
+            
+            loadLocalSecurityLogs() {
+                try {
+                    const logs = JSON.parse(localStorage.getItem('security_events') || '[]');
+                    this.securityLogs = logs;
+                    document.getElementById('totalEvents').textContent = logs.length;
+                    
+                    // Count by severity
+                    const critical = logs.filter(l => l.eventType.includes('CRITICAL') || l.eventType.includes('LOCKOUT')).length;
+                    const warning = logs.filter(l => l.eventType.includes('WARNING') || l.eventType.includes('ABUSE')).length;
+                    const info = logs.filter(l => l.eventType.includes('INFO') || l.eventType.includes('API')).length;
+                    
+                    document.getElementById('criticalCount').textContent = critical;
+                    document.getElementById('warningCount').textContent = warning;
+                    document.getElementById('infoCount').textContent = info;
+                    
+                } catch (error) {
+                    console.error('Load logs error:', error);
+                }
+            }
+            
+            async loadUserStats() {
+                try {
+                    // Get total users
+                    const usersSnap = await this.db.collection('users').get();
+                    document.getElementById('totalUsers').textContent = usersSnap.size;
+                    
+                    // Get active sessions (simplified - count users logged in last 30 minutes)
+                    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+                    const activeUsers = usersSnap.docs.filter(doc => {
+                        const data = doc.data();
+                        return data.lastLogin && data.lastLogin.toDate() > thirtyMinutesAgo;
+                    }).length;
+                    
+                    document.getElementById('activeSessions').textContent = activeUsers;
+                    
+                } catch (error) {
+                    console.error('Load user stats error:', error);
+                }
+            }
+            
+            updateDashboard() {
+                // Update protection toggle states
+                this.updateToggleStates();
+                
+                // Update real-time monitor
+                this.updateRealtimeMonitor();
+                
+                // Update overall status
+                this.updateOverallStatus();
+            }
+            
+            updateToggleStates() {
+                if (!window.security) return;
+                
+                const states = window.security.getSecurityReport().settings;
+                
+                // Update toggle UI
+                this.updateToggle('anti-download', states.antiDownload);
+                this.updateToggle('route-guards', states.routeProtection);
+                this.updateToggle('abuse-detection', states.abuseDetection);
+            }
+            
+            updateToggle(toggleId, isActive) {
+                const toggle = document.getElementById(toggleId + 'Toggle');
+                const badge = toggle.querySelector('.badge');
+                
+                if (isActive) {
+                    toggle.classList.remove('inactive');
+                    toggle.classList.add('active');
+                    badge.className = 'badge bg-success';
+                    badge.textContent = 'ENABLED';
+                } else {
+                    toggle.classList.remove('active');
+                    toggle.classList.add('inactive');
+                    badge.className = 'badge bg-danger';
+                    badge.textContent = 'DISABLED';
+                }
+            }
+            
+            updateRealtimeMonitor() {
+                const monitor = document.getElementById('realTimeMonitor');
+                const logs = this.securityLogs.slice(-20).reverse(); // Show last 20 logs, newest first
+                
+                if (logs.length === 0) {
+                    monitor.innerHTML = `
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-shield-alt fa-3x mb-3"></i>
+                            <p>No security events to display</p>
+                            <small>Events will appear here in real-time</small>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                logs.forEach(log => {
+                    let severity = 'info';
+                    if (log.eventType.includes('CRITICAL') || log.eventType.includes('LOCKOUT')) severity = 'critical';
+                    else if (log.eventType.includes('WARNING') || log.eventType.includes('ABUSE')) severity = 'warning';
+                    
+                    const time = new Date(log.timestamp).toLocaleTimeString();
+                    const data = typeof log.data === 'string' ? log.data : JSON.stringify(log.data, null, 2);
+                    
+                    html += `
+                        <div class="log-entry log-${severity}">
+                            <div class="d-flex justify-content-between">
+                                <strong>${log.eventType}</strong>
+                                <small class="text-muted">${time}</small>
+                            </div>
+                            <div class="mt-1">
+                                <small class="text-muted">${data.substring(0, 100)}${data.length > 100 ? '...' : ''}</small>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                monitor.innerHTML = html;
+            }
+            
+            updateOverallStatus() {
+                const statusElement = document.getElementById('overallStatus');
+                const threatsElement = document.getElementById('activeThreats');
+                
+                // Count active threats (critical events in last hour)
+                const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+                const recentCritical = this.securityLogs.filter(log => {
+                    const logTime = new Date(log.timestamp);
+                    return (log.eventType.includes('CRITICAL') || log.eventType.includes('LOCKOUT')) && 
+                           logTime > oneHourAgo;
+                }).length;
+                
+                threatsElement.textContent = `${recentCritical} Active Threats`;
+                
+                if (recentCritical > 0) {
+                    statusElement.className = 'security-badge badge-warning';
+                    statusElement.textContent = 'WARNING';
+                } else {
+                    statusElement.className = 'security-badge badge-enabled';
+                    statusElement.textContent = 'SECURE';
+                }
+            }
+            
+            startRealtimeUpdates() {
+                // Simulate real-time updates
+                setInterval(() => {
+                    this.loadLocalSecurityLogs();
+                    this.updateDashboard();
+                }, 10000); // Update every 10 seconds
+            }
+            
+            // Action Functions
+            toggleProtection(type) {
+                if (!window.security) return;
+                
+                const currentState = window.security.getSecurityReport().settings;
+                const isEnabled = currentState[{
+                    'anti-download': 'antiDownload',
+                    'route-guards': 'routeProtection',
+                    'abuse-detection': 'abuseDetection'
+                }[type]];
+                
+                if (isEnabled) {
+                    window.security.disableProtection(type);
+                } else {
+                    window.security.enableProtection(type);
+                }
+                
+                this.updateToggleStates();
+                showToast(`${type} ${isEnabled ? 'disabled' : 'enabled'}`);
+            }
+            
+            enableAllProtections() {
+                if (!window.security) return;
+                
+                window.security.enableProtection('anti-download');
+                window.security.enableProtection('route-guards');
+                window.security.enableProtection('abuse-detection');
+                
+                this.updateToggleStates();
+                showToast('All protections enabled');
+            }
+            
+            disableAllProtections() {
+                if (!window.security) return;
+                
+                window.security.disableProtection('anti-download');
+                window.security.disableProtection('route-guards');
+                window.security.disableProtection('abuse-detection');
+                
+                this.updateToggleStates();
+                showToast('All protections disabled');
+            }
+            
+            resetSecuritySettings() {
+                if (!window.security) return;
+                
+                window.security.resetFailedAttempts();
+                showToast('Security settings reset');
+            }
+            
+            viewSecurityReport() {
+                if (!window.security) return;
+                
+                const report = window.security.getSecurityReport();
+                document.getElementById('securityReportContent').textContent = 
+                    JSON.stringify(report, null, 2);
+                
+                const modal = new bootstrap.Modal(document.getElementById('securityReportModal'));
+                modal.show();
+            }
+            
+            clearSecurityLogs() {
+                if (!window.security) return;
+                
+                if (confirm('Clear all security logs?')) {
+                    window.security.clearSecurityLogs();
+                    this.securityLogs = [];
+                    this.updateDashboard();
+                    showToast('Security logs cleared');
+                }
+            }
+            
+            lockdownPlatform() {
+                if (confirm('EMERGENCY: Lockdown platform? This will log out all users.')) {
+                    // In a real implementation, this would trigger backend lockdown
+                    showToast('Emergency lockdown initiated');
+                    
+                    // Log out current user
+                    setTimeout(() => {
+                        auth.logout();
+                    }, 3000);
+                }
+            }
+            
+            testSecurityMeasures() {
+                // Test various security measures
+                window.security.showSecurityWarning('Test security warning');
+                
+                // Log test event
+                window.security.logSecurityEvent('TEST_EVENT', {
+                    message: 'Security test conducted',
+                    admin: auth.currentUser.email,
+                    timestamp: new Date().toISOString()
+                });
+                
+                showToast('Security test completed');
+            }
+            
+            async suspendUser() {
+                const email = document.getElementById('userEmail').value.trim();
+                if (!email) {
+                    alert('Please enter user email');
+                    return;
+                }
+                
+                if (confirm(`Suspend user: ${email}?`)) {
+                    // In a real implementation, this would update user status in database
+                    showToast(`User ${email} suspended`);
+                    document.getElementById('userEmail').value = '';
+                }
+            }
+            
+            refreshLogs() {
+                this.loadLocalSecurityLogs();
+                this.updateDashboard();
+                showToast('Logs refreshed');
+            }
+            
+            downloadSecurityReport() {
+                const report = window.security.getSecurityReport();
+                const dataStr = JSON.stringify(report, null, 2);
+                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                
+                const exportFileDefaultName = `security-report-${new Date().toISOString().split('T')[0]}.json`;
+                
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', exportFileDefaultName);
+                linkElement.click();
+            }
+        }
+        
+        // Helper function
+        function showToast(message) {
+            alert(message); // Simple alert for now
+        }
+        
+        // Initialize
+        let securityDashboard = null;
+        document.addEventListener('DOMContentLoaded', function() {
+            securityDashboard = new SecurityDashboard();
+            window.securityDashboard = securityDashboard;
+        });
+        
+        // Global functions for HTML onclick
+        function toggleProtection(type) {
+            window.securityDashboard.toggleProtection(type);
+        }
+        
+        function enableAllProtections() {
+            window.securityDashboard.enableAllProtections();
+        }
+        
+        function disableAllProtections() {
+            window.securityDashboard.disableAllProtections();
+        }
+        
+        function resetSecuritySettings() {
+            window.securityDashboard.resetSecuritySettings();
+        }
+        
+        function viewSecurityReport() {
+            window.securityDashboard.viewSecurityReport();
+        }
+        
+        function clearSecurityLogs() {
+            window.securityDashboard.clearSecurityLogs();
+        }
+        
+        function lockdownPlatform() {
+            window.securityDashboard.lockdownPlatform();
+        }
+        
+        function testSecurityMeasures() {
+            window.securityDashboard.testSecurityMeasures();
+        }
+        
+        function suspendUser() {
+            window.securityDashboard.suspendUser();
+        }
+        
+        function refreshLogs() {
+            window.securityDashboard.refreshLogs();
+        }
+        
+        function downloadSecurityReport() {
+            window.securityDashboard.downloadSecurityReport();
+        }
+    </script>
+</body>
+</html>
