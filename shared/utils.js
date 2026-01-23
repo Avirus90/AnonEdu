@@ -2,7 +2,6 @@
 
 class EduUtils {
     static showLoading(message = 'Loading...') {
-        // Remove existing loader
         this.hideLoading();
         
         const loader = document.createElement('div');
@@ -17,7 +16,6 @@ class EduUtils {
             </div>
         `;
         
-        // Add styles
         const style = document.createElement('style');
         style.textContent = `
             .edu-loading-overlay {
@@ -78,7 +76,7 @@ class EduUtils {
     }
     
     static async fetchWithAuth(url, options = {}) {
-        const token = await eduAuth?.getAuthToken();
+        const token = await window.eduAuth?.getAuthToken();
         
         const defaultOptions = {
             headers: {
@@ -91,7 +89,6 @@ class EduUtils {
             const response = await fetch(url, { ...defaultOptions, ...options });
             
             if (response.status === 401) {
-                // Unauthorized - redirect to login
                 window.location.href = 'index.html';
                 return null;
             }
