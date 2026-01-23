@@ -18,32 +18,7 @@
     <link rel="stylesheet" href="admin.css">
     
     <!-- Shared Config -->
-    <script>
-        // Inline config to avoid path issues
-        const FIREBASE_CONFIG = {
-            apiKey: "AIzaSyDuoHlw9Op4ZHbSvT3JQfoSWJFa0rjelz4",
-            authDomain: "eduanon-835f9.firebaseapp.com",
-            projectId: "eduanon-835f9",
-            storageBucket: "eduanon-835f9.firebasestorage.app",
-            messagingSenderId: "378269868239",
-            appId: "1:378269868239:web:951d8ca35fd252313dd7ba"
-        };
-        
-        const BACKEND_URLS = {
-            local: "http://localhost:3000",
-            vercel: "https://telegram-backend-rq82.vercel.app",
-            get active() {
-                return window.location.hostname.includes('github.io') ? this.vercel : this.local;
-            }
-        };
-        
-        const ADMIN_EMAIL = "bimbadharbaghel0@gmail.com";
-        
-        window.FIREBASE_CONFIG = FIREBASE_CONFIG;
-        window.BACKEND_URL = BACKEND_URLS.active;
-        window.BACKEND_URLS = BACKEND_URLS;
-        window.ADMIN_EMAIL = ADMIN_EMAIL;
-    </script>
+    <script src="../shared/firebase-config.js"></script>
 </head>
 <body>
     <!-- Navigation -->
@@ -54,7 +29,7 @@
             </a>
             <div class="d-flex align-items-center">
                 <span class="text-light me-3" id="adminEmail">Loading...</span>
-                <button class="btn btn-outline-light btn-sm" onclick="eduAuth.logout()">
+                <button class="btn btn-outline-light btn-sm" onclick="window.eduAuth.logout()">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
             </div>
@@ -124,7 +99,7 @@
                             </button>
                         </div>
                         
-                        <!-- Telegram Channel Info -->
+                        <!-- Telegram Channel Info - UPDATED -->
                         <div class="mt-4 p-3 bg-light rounded">
                             <h6><i class="fab fa-telegram"></i> Telegram Channels:</h6>
                             <ul class="list-unstyled">
@@ -139,7 +114,7 @@
                                     </a>
                                 </li>
                                 <li>
-                                    <small class="text-muted">Bot: @ANONEDU_BOT</small>
+                                    <small class="text-muted">Bot: @ANONEDU_Bot</small>
                                 </li>
                             </ul>
                         </div>
@@ -153,7 +128,7 @@
                 <div class="admin-card">
                     <div class="admin-card-header d-flex justify-content-between">
                         <span><i class="fas fa-list"></i> Courses</span>
-                        <button class="btn btn-sm btn-primary" onclick="adminPanel.loadCourses()">
+                        <button class="btn btn-sm btn-primary" onclick="loadCourses()">
                             <i class="fas fa-sync"></i> Refresh
                         </button>
                     </div>
@@ -205,14 +180,14 @@
                         <div class="mb-3">
                             <label class="form-label">Telegram Channel ID</label>
                             <input type="text" class="form-control" id="courseChannel" 
-                                   value="-1001973930631" readonly>
+                                   value="-1003687504990" readonly>
                             <small class="text-muted">Private channel for this course</small>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="adminPanel.saveCourse()">
+                    <button type="button" class="btn btn-primary" onclick="saveCourse()">
                         <i class="fas fa-save"></i> Create Course
                     </button>
                 </div>
@@ -222,7 +197,8 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="auth(shared).js"></script>
+    <script src="../shared/auth.js"></script>
+    <script src="../shared/utils.js"></script>
     <script src="admin.js"></script>
     
     <script>
@@ -230,55 +206,28 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Admin Panel Loaded');
             checkAdminAccess();
-            
-            // Initialize admin panel after auth is ready
-            setTimeout(() => {
-                if (window.adminPanel) {
-                    adminPanel.loadDashboard();
-                }
-            }, 1000);
+            loadDashboard();
         });
 
         function checkAdminAccess() {
-            if (!eduAuth || !eduAuth.currentUser) {
+            if (!window.eduAuth || !window.eduAuth.currentUser) {
                 window.location.href = '../index.html';
                 return;
             }
             
-            const email = eduAuth.currentUser.email;
+            const email = window.eduAuth.currentUser.email;
             document.getElementById('adminEmail').textContent = email;
             
             if (email !== ADMIN_EMAIL) {
                 alert('Access Denied: Admin only');
-                eduAuth.logout();
+                window.eduAuth.logout();
             }
         }
         
-        function showCreateCourse() {
-            const modal = new bootstrap.Modal(document.getElementById('createCourseModal'));
-            modal.show();
-        }
-        
-        function syncTelegramFiles() {
+        function loadDashboard() {
             if (window.adminPanel) {
-                adminPanel.syncTelegramFiles();
+                window.adminPanel.loadDashboard();
             }
-        }
-        
-        function showUploadForm() {
-            alert('Upload form will be implemented');
-        }
-        
-        function manageUsers() {
-            alert('User management will be implemented');
-        }
-        
-        function createMockTest() {
-            alert('Mock test creation will be implemented');
-        }
-        
-        function scheduleLiveClass() {
-            alert('Live class scheduling will be implemented');
         }
     </script>
 </body>
