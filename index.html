@@ -209,7 +209,7 @@
                     <div class="col-md-6">
                         <ul class="list-unstyled">
                             <li><i class="fas fa-check text-success"></i> <strong>Firebase Project:</strong> eduanon-835f9</li>
-                            <li><i class="fas fa-check text-success"></i> <strong>Telegram Bot:</strong> @ANONEDU_BOT</li>
+                            <li><i class="fas fa-check text-success"></i> <strong>Telegram Bot:</strong> @ANONEDU_Bot</li>
                             <li><i class="fas fa-check text-success"></i> <strong>Public Channel:</strong> @ANON_EDU</li>
                             <li><i class="fas fa-check text-success"></i> <strong>GitHub Pages:</strong> virus90.github.io/AnonEdu</li>
                         </ul>
@@ -260,7 +260,7 @@
         <div class="text-center mt-4 text-white">
             <p>
                 <small>
-                    EduAnon Platform • STEP 4: Frontend Auth • 
+                    EduAnon Platform • 
                     GitHub Pages: <strong>avirus90.github.io/AnonEdu</strong> • 
                     <a href="https://github.com/avirus90/AnonEdu" class="text-white" target="_blank">
                         <i class="fab fa-github"></i> View Source Code
@@ -301,7 +301,7 @@
                             </tr>
                             <tr>
                                 <th>Backend (Vercel):</th>
-                                <td><code>https://telegram-backend-rq82.vercel.app</code></td>
+                                <td><code>https://anon-edu-backend-anon.vercel.app</code></td>
                             </tr>
                             <tr>
                                 <th>Local Backend:</th>
@@ -321,7 +321,7 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Configuration -->
+    <!-- Main Script -->
     <script>
         // ==================== CONFIGURATION ====================
         const FIREBASE_CONFIG = {
@@ -333,29 +333,35 @@
             appId: "1:378269868239:web:951d8ca35fd252313dd7ba"
         };
         
+        // Backend URLs (YOUR SPECIFIC) - UPDATED
         const BACKEND_URLS = {
             local: "http://localhost:3000",
-            vercel: "https://telegram-backend-rq82.vercel.app",
+            vercel: "https://anon-edu-backend-anon.vercel.app",
             get active() {
                 return this.vercel;
             }
         };
         
+        // Telegram Configuration - UPDATED
         const TELEGRAM_INFO = {
-            bot: "@ANONEDU_BOT",
+            bot: "@ANONEDU_Bot",
             publicChannel: "@ANON_EDU",
-            privateChannel: "-1001973930631",
+            privateChannel: "-1003687504990",
             publicLink: "https://t.me/ANON_EDU",
             privateLink: "https://t.me/+oG9POSOSZes3MDJl"
         };
         
+        // GitHub Pages URL
         const GITHUB_PAGES_URL = "https://avirus90.github.io/AnonEdu/";
+        
+        // Admin Email
         const ADMIN_EMAIL = "bimbadharbaghel0@gmail.com";
         
         // ==================== INITIALIZATION ====================
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 EduAnon Platform - Landing Page');
+            console.log('🚀 EduAnon Platform');
             console.log('🌐 GitHub Pages:', GITHUB_PAGES_URL);
+            console.log('📡 Backend:', BACKEND_URLS.active);
             
             // Display config info
             document.getElementById('firebaseConfigCode').textContent = 
@@ -364,11 +370,19 @@
             document.getElementById('telegramConfigCode').textContent = 
                 JSON.stringify(TELEGRAM_INFO, null, 2);
             
+            // Set GitHub Pages info
             document.title = "EduAnon - " + GITHUB_PAGES_URL;
             
+            // Initialize Firebase
             initializeFirebase();
+            
+            // Check backend status
             checkBackendStatus();
+            
+            // Check if user is already logged in
             checkExistingLogin();
+            
+            // Setup GitHub Pages mode
             setupGitHubPagesMode();
         });
         
@@ -376,13 +390,16 @@
         function initializeFirebase() {
             try {
                 firebase.initializeApp(FIREBASE_CONFIG);
-                console.log('✅ Firebase initialized');
+                console.log('✅ Firebase initialized for GitHub Pages');
                 updateStatus('firebaseStatus', 'online');
                 
+                // Set up auth state listener
                 firebase.auth().onAuthStateChanged((user) => {
                     if (user) {
                         console.log('👤 User logged in:', user.email);
                         redirectBasedOnRole(user.email);
+                    } else {
+                        console.log('👤 No user logged in');
                     }
                 });
                 
@@ -395,17 +412,51 @@
         // ==================== GITHUB PAGES SETUP ====================
         function setupGitHubPagesMode() {
             console.log('🌐 Running on GitHub Pages:', window.location.href);
+            
+            // Update all internal links for GitHub Pages structure
+            updateLinksForGitHubPages();
+            
+            // Show GitHub Pages indicator
             document.getElementById('backendUrl').textContent = 'Vercel (GitHub Mode)';
             updateStatus('telegramStatus', 'online');
+            
+            // Add GitHub Pages specific event listeners
+            document.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A' && e.target.href.includes('index.html')) {
+                    const href = e.target.getAttribute('href');
+                    if (href && !href.startsWith('http')) {
+                        e.preventDefault();
+                        window.location.href = href;
+                    }
+                }
+            });
+        }
+        
+        function updateLinksForGitHubPages() {
+            const links = document.querySelectorAll('a[href*=".html"]');
+            links.forEach(link => {
+                const href = link.getAttribute('href');
+                if (href && !href.startsWith('http')) {
+                    const cleanHref = href.replace(/^\.\//, '').replace(/^\//, '');
+                    link.setAttribute('href', cleanHref);
+                }
+            });
         }
         
         // ==================== AUTH FUNCTIONS ====================
         async function loginAsStudent() {
             try {
-                console.log('👨‍🎤 Student login initiated');
+                console.log('👨‍🎤 Student login initiated (GitHub Pages)');
+                
                 const provider = new firebase.auth.GoogleAuthProvider();
                 const result = await firebase.auth().signInWithPopup(provider);
-                await checkUserRole(result.user.uid, result.user.email);
+                
+                const user = result.user;
+                console.log('Student logged in:', user.email);
+                
+                // Check role and redirect
+                await checkUserRole(user.uid, user.email);
+                
             } catch (error) {
                 console.error('Login error:', error);
                 alert('Login failed: ' + error.message);
@@ -414,11 +465,14 @@
         
         async function loginAsAdmin() {
             try {
-                console.log('👨‍💼 Admin login initiated');
+                console.log('👨‍💼 Admin login initiated (GitHub Pages)');
+                
                 const provider = new firebase.auth.GoogleAuthProvider();
                 const result = await firebase.auth().signInWithPopup(provider);
+                
                 const user = result.user;
                 
+                // Verify admin email
                 if (user.email !== ADMIN_EMAIL) {
                     alert('⚠️ This email is not authorized as admin.\nOnly ' + ADMIN_EMAIL + ' can login as admin.');
                     await firebase.auth().signOut();
@@ -436,24 +490,30 @@
         
         async function checkUserRole(userId, email) {
             try {
+                // Try to get role from backend
                 const user = firebase.auth().currentUser;
                 if (!user) return;
                 
                 const token = await user.getIdToken();
+                
                 const response = await fetch(`${BACKEND_URLS.active}/api/user/role`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
                 });
                 
                 if (response.ok) {
                     const data = await response.json();
                     console.log('Role data:', data);
                     
+                    // Redirect based on role
                     if (data.role === 'admin') {
                         window.location.href = 'admin/index.html';
                     } else {
                         window.location.href = 'student/index.html';
                     }
                 } else {
+                    // Fallback: check email for admin
                     redirectBasedOnRole(email);
                 }
                 
@@ -480,6 +540,7 @@
         }
         
         function tryDemo() {
+            // Demo mode - set session flag
             sessionStorage.setItem('edu_demo_mode', 'true');
             window.location.href = 'student/index.html?demo=true';
         }
@@ -488,6 +549,7 @@
         async function checkBackendStatus() {
             try {
                 const response = await fetch(`${BACKEND_URLS.vercel}/api/test`);
+                
                 if (response.ok) {
                     updateStatus('backendStatus', 'online');
                     document.getElementById('backendUrl').textContent = 'Vercel ✓';
@@ -513,8 +575,10 @@
             modal.show();
         }
         
-        // Auto-refresh status
+        // Auto-refresh status every 30 seconds
         setInterval(checkBackendStatus, 30000);
+        
+        // Initial check
         checkBackendStatus();
     </script>
 </body>
