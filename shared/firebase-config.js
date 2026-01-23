@@ -13,7 +13,7 @@ const BACKEND_URLS = {
     local: "http://localhost:3000",
     vercel: "https://anon-edu-backend-anon.vercel.app",
     get active() {
-        return window.location.hostname.includes('github.io') ? this.vercel : this.local;
+        return this.vercel; // Always use Vercel for now
     }
 };
 
@@ -23,19 +23,19 @@ const TELEGRAM_CONFIG = {
     botUsername: "@ANONEDU_Bot",
     publicChannel: "@ANON_EDU",
     publicChannelId: "-1003687504990",
-    publicLink: "https://t.me/ANON_EDU",
-    privateLink: "https://t.me/+oG9POSOSZes3MDJl"
+    publicLink: "https://t.me/ANON_EDU"
 };
 
 // Admin Email
 const ADMIN_EMAIL = "bimbadharbaghel0@gmail.com";
-
-// GitHub Pages URL
-const GITHUB_PAGES_URL = "https://avirus90.github.io/AnonEdu/";
 
 // Export for use
 window.FIREBASE_CONFIG = FIREBASE_CONFIG;
 window.BACKEND_URL = BACKEND_URLS.active;
 window.TELEGRAM_CONFIG = TELEGRAM_CONFIG;
 window.ADMIN_EMAIL = ADMIN_EMAIL;
-window.GITHUB_PAGES_URL = GITHUB_PAGES_URL;
+
+console.log('📡 Config loaded:', { 
+    backend: BACKEND_URLS.active,
+    channel: TELEGRAM_CONFIG.publicChannel 
+});
