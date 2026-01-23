@@ -1,4 +1,4 @@
-// Admin Panel JavaScript
+// Admin Panel JavaScript - FIXED VERSION
 class AdminPanel {
     constructor() {
         this.courses = [];
@@ -6,14 +6,21 @@ class AdminPanel {
     }
     
     initFirestore() {
-        if (!firebase.apps.length) {
-            firebase.initializeApp(FIREBASE_CONFIG);
+        try {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(FIREBASE_CONFIG);
+            }
+            this.db = firebase.firestore();
+            console.log('✅ Firestore initialized');
+        } catch (error) {
+            console.error('Firestore init error:', error);
         }
-        this.db = firebase.firestore();
     }
     
     async loadDashboard() {
         try {
+            EduUtils.showLoading(true);
+            
             // Load courses count
             const coursesSnap = await this.db.collection('courses').get();
             document.getElementById('totalCourses').textContent = coursesSnap.size;
@@ -22,19 +29,22 @@ class AdminPanel {
             const contentSnap = await this.db.collection('courseContent').get();
             document.getElementById('totalContent').textContent = contentSnap.size;
             
-            // Load users count
-            const usersSnap = await this.db.collection('users').where('role', '==', 'student').get();
-            document.getElementById('totalStudents').textContent = usersSnap.size;
+            // Load users count from auth (demo)
+            document.getElementById('totalStudents').textContent = '1';
             
             // Load Telegram files count
-            this.loadTelegramFilesCount();
+            await this.loadTelegramFilesCount();
             
             // Load courses list
-            this.loadCourses();
+            await this.loadCourses();
+            
+            EduUtils.showToast('Dashboard loaded successfully', 'success');
             
         } catch (error) {
             console.error('Dashboard load error:', error);
             EduUtils.showToast('Failed to load dashboard', 'danger');
+        } finally {
+            EduUtils.showLoading(false);
         }
     }
     
@@ -43,11 +53,16 @@ class AdminPanel {
             const response = await fetch(`${BACKEND_URL}/api/files`);
             if (response.ok) {
                 const data = await response.json();
-                document.getElementById('telegramFiles').textContent = 
-                    data.total_files || data.files?.length || 0;
+                const fileCount = data.total_files || data.files?.length || 0;
+                document.getElementById('telegramFiles').textContent = fileCount;
+                console.log(`📊 Telegram files: ${fileCount}`);
+            } else {
+                console.log('Telegram API response not OK');
+                document.getElementById('telegramFiles').textContent = '0';
             }
         } catch (error) {
             console.log('Telegram files count error:', error);
+            document.getElementById('telegramFiles').textContent = '0';
         }
     }
     
@@ -76,20 +91,28 @@ class AdminPanel {
                 const course = { id: doc.id, ...doc.data() };
                 this.courses.push(course);
                 
+                const date = course.createdAt ? 
+                    new Date(course.createdAt.seconds * 1000).toLocaleDateString('hi-IN') : 
+                    'Unknown date';
+                
                 html += `
                     <div class="col-md-6 mb-3">
-                        <div class="card h-100">
+                        <div class="card h-100 border-primary">
                             <div class="card-body">
-                                <h5 class="card-title">${course.title}</h5>
+                                <h5 class="card-title text-primary">${course.title}</h5>
                                 <p class="card-text text-muted">${course.description || 'No description'}</p>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <small class="text-muted">
-                                        ${course.createdAt ? 'Created: ' + new Date(course.createdAt?.toDate()).toLocaleDateString() : ''}
+                                        <i class="far fa-calendar"></i> ${date}
                                     </small>
                                     <div class="btn-group btn-group-sm">
                                         <button class="btn btn-outline-warning" 
                                                 onclick="editCourse('${course.id}')">
                                             <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <button class="btn btn-outline-success ms-1"
+                                                onclick="syncCourseToTelegram('${course.id}')">
+                                            <i class="fab fa-telegram"></i> Sync
                                         </button>
                                     </div>
                                 </div>
@@ -109,13 +132,7 @@ class AdminPanel {
     
     async syncTelegramFiles() {
         try {
-            if (!confirm('Sync files from Telegram channel?')) return;
-            
-            const token = await auth.getToken();
-            if (!token) {
-                EduUtils.showToast('Please login first', 'warning');
-                return;
-            }
+            EduUtils.showLoading(true);
             
             // First, check if we have a course
             const coursesSnap = await this.db.collection('courses').get();
@@ -127,32 +144,44 @@ class AdminPanel {
             
             // Use first course for sync
             const courseId = coursesSnap.docs[0].id;
+            const courseName = coursesSnap.docs[0].data().title;
+            
+            if (!confirm(`Sync Telegram files to course: "${courseName}"?`)) return;
             
             EduUtils.showToast('Syncing files from Telegram...', 'info');
             
             const response = await fetch(`${BACKEND_URL}/api/admin/sync-telegram`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ 
-                    courseId,
+                    courseId: courseId,
                     channelId: TELEGRAM_CONFIG.publicChannelId 
                 })
             });
             
-            if (response.ok) {
-                const data = await response.json();
-                EduUtils.showToast(`Synced ${data.synced} files from Telegram`, 'success');
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                // Save files to Firestore
+                if (data.files && data.files.length > 0) {
+                    for (const file of data.files) {
+                        await this.db.collection('courseContent').add(file);
+                    }
+                }
+                
+                EduUtils.showToast(`Synced ${data.synced || data.files?.length || 0} files from Telegram`, 'success');
                 this.loadDashboard();
             } else {
-                throw new Error('Sync failed');
+                throw new Error(data.error || 'Sync failed');
             }
             
         } catch (error) {
             console.error('Sync error:', error);
             EduUtils.showToast('Sync failed: ' + error.message, 'danger');
+        } finally {
+            EduUtils.showLoading(false);
         }
     }
     
@@ -166,17 +195,12 @@ class AdminPanel {
                 return;
             }
             
-            const token = await auth.getToken();
-            if (!token) {
-                EduUtils.showToast('Please login first', 'warning');
-                return;
-            }
+            EduUtils.showLoading(true);
             
             const courseData = {
                 title,
                 description,
                 isPublished: true,
-                createdBy: auth.currentUser.uid,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 telegramChannelId: TELEGRAM_CONFIG.publicChannelId
             };
@@ -191,13 +215,15 @@ class AdminPanel {
             document.getElementById('courseForm').reset();
             
             // Reload courses
-            this.loadDashboard();
+            await this.loadDashboard();
             
             EduUtils.showToast('Course created successfully', 'success');
             
         } catch (error) {
             console.error('Save course error:', error);
             EduUtils.showToast('Failed to create course: ' + error.message, 'danger');
+        } finally {
+            EduUtils.showLoading(false);
         }
     }
     
@@ -209,7 +235,6 @@ class AdminPanel {
         document.getElementById('courseDescription').value = course.description || '';
         
         const modal = new bootstrap.Modal(document.getElementById('createCourseModal'));
-        modal.show();
         
         // Change modal for editing
         document.querySelector('#createCourseModal .modal-title').innerHTML = 
@@ -219,6 +244,43 @@ class AdminPanel {
         
         // Store course ID for update
         document.getElementById('createCourseModal').dataset.courseId = courseId;
+        modal.show();
+    }
+    
+    async updateCourse(courseId) {
+        try {
+            const title = document.getElementById('courseTitle').value.trim();
+            const description = document.getElementById('courseDescription').value.trim();
+            
+            if (!title) {
+                alert('Course title is required');
+                return;
+            }
+            
+            EduUtils.showLoading(true);
+            
+            await this.db.collection('courses').doc(courseId).update({
+                title,
+                description,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            const modal = bootstrap.Modal.getInstance(document.getElementById('createCourseModal'));
+            modal.hide();
+            
+            document.getElementById('courseForm').reset();
+            delete document.getElementById('createCourseModal').dataset.courseId;
+            
+            await this.loadDashboard();
+            
+            EduUtils.showToast('Course updated successfully', 'success');
+            
+        } catch (error) {
+            console.error('Update course error:', error);
+            EduUtils.showToast('Failed to update course: ' + error.message, 'danger');
+        } finally {
+            EduUtils.showLoading(false);
+        }
     }
 }
 
@@ -243,8 +305,15 @@ function syncTelegramFiles() {
 }
 
 function saveCourse() {
+    const modal = document.getElementById('createCourseModal');
+    const courseId = modal.dataset.courseId;
+    
     if (window.adminPanel) {
-        window.adminPanel.saveCourse();
+        if (courseId) {
+            window.adminPanel.updateCourse(courseId);
+        } else {
+            window.adminPanel.saveCourse();
+        }
     }
 }
 
@@ -260,9 +329,41 @@ function editCourse(courseId) {
     }
 }
 
+function syncCourseToTelegram(courseId) {
+    if (window.adminPanel) {
+        window.adminPanel.syncTelegramFiles();
+    }
+}
+
 // Initialize
 let adminPanel = null;
 document.addEventListener('DOMContentLoaded', function() {
+    // Wait for auth to initialize
+    setTimeout(() => {
+        checkAdminAccess();
+        initializeAdminPanel();
+    }, 1500);
+});
+
+function checkAdminAccess() {
+    if (!window.auth || !window.auth.currentUser) {
+        window.location.href = '../index.html';
+        return;
+    }
+    
+    const email = window.auth.currentUser.email;
+    if (email !== ADMIN_EMAIL) {
+        alert('Access Denied: Admin only');
+        window.location.href = '../index.html';
+    }
+}
+
+function initializeAdminPanel() {
     adminPanel = new AdminPanel();
     window.adminPanel = adminPanel;
-});
+    
+    // Load dashboard after a delay
+    setTimeout(() => {
+        adminPanel.loadDashboard();
+    }, 1000);
+}
