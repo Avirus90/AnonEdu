@@ -36,7 +36,7 @@ class AdminPanel {
             
         } catch (error) {
             console.error('Dashboard load error:', error);
-            this.showError('Failed to load dashboard');
+            showError('Failed to load dashboard');
         }
     }
     
@@ -86,15 +86,15 @@ class AdminPanel {
                                 <p class="card-text text-muted">${course.description || 'No description'}</p>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <small class="text-muted">
-                                        Created: ${course.createdAt ? new Date(course.createdAt?.toDate()).toLocaleDateString() : 'N/A'}
+                                        Created: ${new Date(course.createdAt?.toDate()).toLocaleDateString()}
                                     </small>
                                     <div class="btn-group btn-group-sm">
                                         <button class="btn btn-outline-primary" 
-                                                onclick="adminPanel.viewCourse('${course.id}')">
+                                                onclick="viewCourse('${course.id}')">
                                             <i class="fas fa-eye"></i> View
                                         </button>
                                         <button class="btn btn-outline-warning" 
-                                                onclick="adminPanel.editCourse('${course.id}')">
+                                                onclick="editCourse('${course.id}')">
                                             <i class="fas fa-edit"></i> Edit
                                         </button>
                                     </div>
@@ -109,7 +109,7 @@ class AdminPanel {
             
         } catch (error) {
             console.error('Load courses error:', error);
-            this.showError('Failed to load courses');
+            showError('Failed to load courses');
         }
     }
     
@@ -117,7 +117,7 @@ class AdminPanel {
         try {
             if (!confirm('Sync files from Telegram channel?')) return;
             
-            const token = await eduAuth?.getToken();
+            const token = await window.eduAuth.getAuthToken();
             if (!token) throw new Error('Not authenticated');
             
             // First, check if we have a course
@@ -164,24 +164,23 @@ class AdminPanel {
                 return;
             }
             
-            const token = await eduAuth?.getToken();
+            const token = await window.eduAuth.getAuthToken();
             if (!token) throw new Error('Not authenticated');
             
             const courseData = {
                 title,
                 description,
                 isPublished: true,
-                createdBy: eduAuth.currentUser.uid,
+                createdBy: window.eduAuth.currentUser.uid,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                telegramChannelId: '-1001973930631'
+                telegramChannelId: '-1003687504990' // UPDATED
             };
             
             await this.db.collection('courses').add(courseData);
             
             // Close modal
-            const modalElement = document.getElementById('createCourseModal');
-            const modal = bootstrap.Modal.getInstance(modalElement);
-            if (modal) modal.hide();
+            const modal = bootstrap.Modal.getInstance(document.getElementById('createCourseModal'));
+            modal.hide();
             
             // Reset form
             document.getElementById('courseForm').reset();
@@ -189,7 +188,7 @@ class AdminPanel {
             // Reload courses
             this.loadDashboard();
             
-            this.showSuccess('Course created successfully');
+            showSuccess('Course created successfully');
             
         } catch (error) {
             console.error('Save course error:', error);
@@ -200,7 +199,8 @@ class AdminPanel {
     async viewCourse(courseId) {
         // Save course ID to session
         sessionStorage.setItem('currentCourseId', courseId);
-        alert('View course functionality will be implemented');
+        // Redirect to course content page
+        window.location.href = `course.html?id=${courseId}`;
     }
     
     async editCourse(courseId) {
@@ -218,51 +218,44 @@ class AdminPanel {
             '<i class="fas fa-edit"></i> Edit Course';
         document.querySelector('#createCourseModal .modal-footer button.btn-primary').innerHTML = 
             '<i class="fas fa-save"></i> Update Course';
-        document.querySelector('#createCourseModal .modal-footer button.btn-primary').setAttribute('onclick', `adminPanel.updateCourse('${courseId}')`);
+        
+        // Store course ID for update
+        document.getElementById('createCourseModal').dataset.courseId = courseId;
     }
+}
+
+// Helper functions
+function showCreateCourse() {
+    const modal = new bootstrap.Modal(document.getElementById('createCourseModal'));
+    modal.show();
     
-    async updateCourse(courseId) {
-        try {
-            const title = document.getElementById('courseTitle').value.trim();
-            const description = document.getElementById('courseDescription').value.trim();
-            
-            if (!title) {
-                alert('Course title is required');
-                return;
-            }
-            
-            await this.db.collection('courses').doc(courseId).update({
-                title,
-                description,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            
-            // Close modal
-            const modalElement = document.getElementById('createCourseModal');
-            const modal = bootstrap.Modal.getInstance(modalElement);
-            if (modal) modal.hide();
-            
-            // Reset form
-            document.getElementById('courseForm').reset();
-            
-            // Reload courses
-            this.loadDashboard();
-            
-            this.showSuccess('Course updated successfully');
-            
-        } catch (error) {
-            console.error('Update course error:', error);
-            alert('Failed to update course: ' + error.message);
-        }
-    }
-    
-    showError(message) {
-        alert('Error: ' + message);
-    }
-    
-    showSuccess(message) {
-        alert('Success: ' + message);
-    }
+    // Reset modal for creation
+    document.querySelector('#createCourseModal .modal-title').innerHTML = 
+        '<i class="fas fa-plus"></i> Create Course';
+    document.querySelector('#createCourseModal .modal-footer button.btn-primary').innerHTML = 
+        '<i class="fas fa-save"></i> Create Course';
+    document.getElementById('courseForm').reset();
+    delete document.getElementById('createCourseModal').dataset.courseId;
+}
+
+function syncTelegramFiles() {
+    window.adminPanel.syncTelegramFiles();
+}
+
+function saveCourse() {
+    window.adminPanel.saveCourse();
+}
+
+function loadCourses() {
+    window.adminPanel.loadCourses();
+}
+
+function showError(message) {
+    alert('Error: ' + message);
+}
+
+function showSuccess(message) {
+    alert('Success: ' + message);
 }
 
 // Initialize
@@ -270,4 +263,9 @@ let adminPanel = null;
 document.addEventListener('DOMContentLoaded', function() {
     adminPanel = new AdminPanel();
     window.adminPanel = adminPanel;
+    
+    // Check if user is admin
+    if (window.eduAuth && window.eduAuth.currentUser && window.eduAuth.currentUser.email === ADMIN_EMAIL) {
+        adminPanel.loadDashboard();
+    }
 });
