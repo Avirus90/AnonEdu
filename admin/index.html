@@ -14,7 +14,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Our CSS -->
+    <!-- Admin CSS -->
     <link rel="stylesheet" href="admin.css">
     
     <!-- Shared Config -->
@@ -22,14 +22,14 @@
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);">
         <div class="container-fluid">
             <a class="navbar-brand" href="../index.html">
-                <i class="fas fa-graduation-cap"></i> EduAnon Admin
+                <i class="fas fa-user-shield"></i> EduAnon Admin
             </a>
             <div class="d-flex align-items-center">
-                <span class="text-light me-3" id="adminEmail">Loading...</span>
-                <button class="btn btn-outline-light btn-sm" onclick="window.eduAuth.logout()">
+                <span class="text-light me-3" id="adminEmail"></span>
+                <button class="btn btn-outline-light btn-sm" onclick="window.auth.logout()">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
             </div>
@@ -85,38 +85,20 @@
                             <button class="btn btn-admin" onclick="syncTelegramFiles()">
                                 <i class="fab fa-telegram"></i> Sync Telegram Files
                             </button>
-                            <button class="btn btn-admin" onclick="showUploadForm()">
-                                <i class="fas fa-upload"></i> Upload to Telegram
-                            </button>
-                            <button class="btn btn-admin" onclick="manageUsers()">
-                                <i class="fas fa-user-cog"></i> Manage Users
-                            </button>
-                            <button class="btn btn-admin" onclick="createMockTest()">
-                                <i class="fas fa-file-alt"></i> Create Mock Test
-                            </button>
-                            <button class="btn btn-admin" onclick="scheduleLiveClass()">
-                                <i class="fas fa-video"></i> Schedule Live Class
+                            <button class="btn btn-admin" onclick="loadCourses()">
+                                <i class="fas fa-sync"></i> Refresh Courses
                             </button>
                         </div>
                         
-                        <!-- Telegram Channel Info - UPDATED -->
+                        <!-- Telegram Channel Info -->
                         <div class="mt-4 p-3 bg-light rounded">
-                            <h6><i class="fab fa-telegram"></i> Telegram Channels:</h6>
-                            <ul class="list-unstyled">
-                                <li>
-                                    <a href="https://t.me/ANON_EDU" target="_blank">
-                                        <i class="fas fa-globe"></i> Public: @ANON_EDU
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="https://t.me/+oG9POSOSZes3MDJl" target="_blank">
-                                        <i class="fas fa-lock"></i> Private Channel
-                                    </a>
-                                </li>
-                                <li>
-                                    <small class="text-muted">Bot: @ANONEDU_Bot</small>
-                                </li>
-                            </ul>
+                            <h6><i class="fab fa-telegram"></i> Telegram:</h6>
+                            <p class="mb-1">
+                                <small>Channel: @ANON_EDU</small>
+                            </p>
+                            <p class="mb-0">
+                                <small>Bot: @ANONEDU_Bot</small>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -126,11 +108,8 @@
             <div class="col-md-8">
                 <!-- Courses List -->
                 <div class="admin-card">
-                    <div class="admin-card-header d-flex justify-content-between">
-                        <span><i class="fas fa-list"></i> Courses</span>
-                        <button class="btn btn-sm btn-primary" onclick="loadCourses()">
-                            <i class="fas fa-sync"></i> Refresh
-                        </button>
+                    <div class="admin-card-header">
+                        <i class="fas fa-list"></i> Courses
                     </div>
                     <div class="admin-card-body">
                         <div id="coursesList" class="row">
@@ -143,23 +122,11 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Recent Activity -->
-                <div class="admin-card mt-4">
-                    <div class="admin-card-header">
-                        <i class="fas fa-history"></i> Recent Activity
-                    </div>
-                    <div class="admin-card-body">
-                        <div id="activityLog">
-                            <p class="text-muted">No recent activity</p>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
 
-    <!-- Modals -->
+    <!-- Create Course Modal -->
     <div class="modal fade" id="createCourseModal">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -176,12 +143,6 @@
                         <div class="mb-3">
                             <label class="form-label">Description</label>
                             <textarea class="form-control" id="courseDescription" rows="3"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Telegram Channel ID</label>
-                            <input type="text" class="form-control" id="courseChannel" 
-                                   value="-1003687504990" readonly>
-                            <small class="text-muted">Private channel for this course</small>
                         </div>
                     </form>
                 </div>
@@ -202,25 +163,28 @@
     <script src="admin.js"></script>
     
     <script>
-        // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Admin Panel Loaded');
-            checkAdminAccess();
-            loadDashboard();
+            
+            // Wait for auth to initialize
+            setTimeout(() => {
+                checkAdminAccess();
+                loadDashboard();
+            }, 500);
         });
 
         function checkAdminAccess() {
-            if (!window.eduAuth || !window.eduAuth.currentUser) {
+            if (!window.auth || !window.auth.currentUser) {
                 window.location.href = '../index.html';
                 return;
             }
             
-            const email = window.eduAuth.currentUser.email;
+            const email = window.auth.currentUser.email;
             document.getElementById('adminEmail').textContent = email;
             
             if (email !== ADMIN_EMAIL) {
                 alert('Access Denied: Admin only');
-                window.eduAuth.logout();
+                window.auth.logout();
             }
         }
         
