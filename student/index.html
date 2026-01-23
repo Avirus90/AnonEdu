@@ -15,162 +15,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Student CSS -->
-    <style>
-        /* Student Panel Styles */
-        :root {
-            --student-primary: #3498db;
-            --student-secondary: #2ecc71;
-            --student-accent: #9b59b6;
-        }
-
-        .student-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .student-header {
-            background: linear-gradient(135deg, var(--student-primary) 0%, var(--student-accent) 100%);
-            color: white;
-            padding: 25px;
-            border-radius: 15px;
-            margin-bottom: 25px;
-        }
-
-        .course-card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-            margin-bottom: 25px;
-            overflow: hidden;
-            transition: all 0.3s;
-        }
-
-        .course-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
-        }
-
-        .course-card-header {
-            background: #f8f9fa;
-            padding: 20px;
-            border-bottom: 2px solid #e9ecef;
-            font-weight: bold;
-            font-size: 1.1rem;
-        }
-
-        .course-card-body {
-            padding: 25px;
-        }
-
-        .content-item {
-            padding: 15px;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            transition: all 0.2s;
-        }
-
-        .content-item:hover {
-            background: #f8f9fa;
-            border-color: var(--student-primary);
-        }
-
-        .content-icon {
-            width: 50px;
-            height: 50px;
-            background: var(--student-primary);
-            color: white;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-        }
-
-        .progress-bar {
-            height: 8px;
-            background: #e9ecef;
-            border-radius: 4px;
-            overflow: hidden;
-            margin: 10px 0;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: var(--student-secondary);
-            border-radius: 4px;
-            transition: width 0.5s ease;
-        }
-
-        .viewer-container {
-            border: 2px solid #dee2e6;
-            border-radius: 10px;
-            overflow: hidden;
-            margin: 20px 0;
-        }
-
-        .viewer-container iframe {
-            width: 100%;
-            height: 600px;
-            border: none;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .student-container {
-                padding: 10px;
-            }
-            
-            .student-header {
-                padding: 20px;
-            }
-            
-            .course-card-body {
-                padding: 15px;
-            }
-            
-            .content-item {
-                flex-direction: column;
-                text-align: center;
-            }
-            
-            .viewer-container iframe {
-                height: 400px;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="student.css">
     
     <!-- Shared Config -->
-    <script>
-        // Inline config
-        const FIREBASE_CONFIG = {
-            apiKey: "AIzaSyDuoHlw9Op4ZHbSvT3JQfoSWJFa0rjelz4",
-            authDomain: "eduanon-835f9.firebaseapp.com",
-            projectId: "eduanon-835f9",
-            storageBucket: "eduanon-835f9.firebasestorage.app",
-            messagingSenderId: "378269868239",
-            appId: "1:378269868239:web:951d8ca35fd252313dd7ba"
-        };
-        
-        const BACKEND_URLS = {
-            local: "http://localhost:3000",
-            vercel: "https://telegram-backend-rq82.vercel.app",
-            get active() {
-                return window.location.hostname.includes('github.io') ? this.vercel : this.local;
-            }
-        };
-        
-        const ADMIN_EMAIL = "bimbadharbaghel0@gmail.com";
-        
-        window.FIREBASE_CONFIG = FIREBASE_CONFIG;
-        window.BACKEND_URL = BACKEND_URLS.active;
-        window.BACKEND_URLS = BACKEND_URLS;
-        window.ADMIN_EMAIL = ADMIN_EMAIL;
-    </script>
+    <script src="../shared/firebase-config.js"></script>
 </head>
 <body>
     <!-- Navigation -->
@@ -180,8 +28,8 @@
                 <i class="fas fa-user-graduate"></i> EduAnon Student
             </a>
             <div class="d-flex align-items-center">
-                <span class="text-light me-3" id="studentEmail">Loading...</span>
-                <button class="btn btn-outline-light btn-sm" onclick="eduAuth.logout()">
+                <span class="text-light me-3" id="studentEmail"></span>
+                <button class="btn btn-outline-light btn-sm" onclick="window.auth.logout()">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
             </div>
@@ -191,17 +39,17 @@
     <div class="student-container">
         <!-- Welcome Banner -->
         <div class="student-header">
-            <h2>Welcome to EduAnon Learning Platform</h2>
-            <p class="mb-0">View-only access • Secure content • No downloads allowed</p>
+            <h2>Welcome to EduAnon Learning</h2>
+            <p class="mb-0">Access your courses and learning materials</p>
             <div class="mt-3">
                 <span class="badge bg-light text-dark me-2">
-                    <i class="fas fa-shield-alt"></i> Secure Viewing
+                    <i class="fas fa-book"></i> Courses
                 </span>
                 <span class="badge bg-light text-dark me-2">
-                    <i class="fas fa-eye"></i> No Downloads
+                    <i class="fas fa-file-pdf"></i> PDFs
                 </span>
                 <span class="badge bg-light text-dark">
-                    <i class="fab fa-telegram"></i> Telegram Storage
+                    <i class="fas fa-video"></i> Videos
                 </span>
             </div>
         </div>
@@ -224,88 +72,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- My Progress -->
-        <div class="mt-5">
-            <h3><i class="fas fa-chart-line"></i> My Progress</h3>
-            <div class="row mt-3">
-                <div class="col-md-4">
-                    <div class="card text-white bg-primary mb-3">
-                        <div class="card-body text-center">
-                            <h1 id="completedCourses">0</h1>
-                            <p class="card-text">Courses Completed</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card text-white bg-success mb-3">
-                        <div class="card-body text-center">
-                            <h1 id="viewedContent">0</h1>
-                            <p class="card-text">Content Viewed</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card text-white bg-warning mb-3">
-                        <div class="card-body text-center">
-                            <h1 id="testScore">-</h1>
-                            <p class="card-text">Average Test Score</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="mt-5">
-            <h3><i class="fas fa-bolt"></i> Quick Access</h3>
-            <div class="row mt-3">
-                <div class="col-md-3 mb-3">
-                    <div class="card text-center h-100">
-                        <div class="card-body">
-                            <i class="fas fa-file-pdf fa-3x text-danger mb-3"></i>
-                            <h5>PDF Notes</h5>
-                            <button class="btn btn-outline-primary btn-sm" onclick="viewPDFs()">
-                                View All
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="card text-center h-100">
-                        <div class="card-body">
-                            <i class="fas fa-video fa-3x text-primary mb-3"></i>
-                            <h5>Video Lectures</h5>
-                            <button class="btn btn-outline-primary btn-sm" onclick="viewVideos()">
-                                View All
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="card text-center h-100">
-                        <div class="card-body">
-                            <i class="fas fa-file-alt fa-3x text-success mb-3"></i>
-                            <h5>Mock Tests</h5>
-                            <button class="btn btn-outline-primary btn-sm" onclick="viewMockTests()">
-                                Take Test
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="card text-center h-100">
-                        <div class="card-body">
-                            <i class="fas fa-chalkboard-teacher fa-3x text-warning mb-3"></i>
-                            <h5>Live Classes</h5>
-                            <button class="btn btn-outline-primary btn-sm" onclick="viewLiveClasses()">
-                                Join Now
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Content Viewer Modal -->
@@ -325,11 +91,6 @@
                             <p class="mt-2">Loading content...</p>
                         </div>
                     </div>
-                    <div class="mt-3">
-                        <p class="text-muted">
-                            <i class="fas fa-info-circle"></i> This content is view-only. Downloading is disabled.
-                        </p>
-                    </div>
                 </div>
             </div>
         </div>
@@ -337,8 +98,9 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="auth(shared).js"></script>
-    <script src="student(student).js"></script>
+    <script src="../shared/auth.js"></script>
+    <script src="../shared/utils.js"></script>
+    <script src="student.js"></script>
     
     <script>
         // Check if demo mode
@@ -347,22 +109,12 @@
             document.getElementById('demoAlert').style.display = 'block';
         }
         
-        // Global functions
-        function viewPDFs() {
-            alert('PDF viewer will open soon');
-        }
-        
-        function viewVideos() {
-            alert('Video lectures will open soon');
-        }
-        
-        function viewMockTests() {
-            window.location.href = 'test.html';
-        }
-        
-        function viewLiveClasses() {
-            window.location.href = 'live.html';
-        }
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set user email if logged in
+            if (window.auth && window.auth.currentUser) {
+                document.getElementById('studentEmail').textContent = window.auth.currentUser.email;
+            }
+        });
     </script>
 </body>
 </html>
