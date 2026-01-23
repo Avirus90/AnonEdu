@@ -2,7 +2,6 @@
 class StudentPanel {
     constructor() {
         this.courses = [];
-        this.progress = {};
         this.initFirestore();
         this.checkAccess();
     }
@@ -12,34 +11,13 @@ class StudentPanel {
             firebase.initializeApp(FIREBASE_CONFIG);
         }
         this.db = firebase.firestore();
-        this.userId = window.eduAuth?.currentUser?.uid;
     }
     
     checkAccess() {
-        if (!window.eduAuth || !window.eduAuth.currentUser) {
-            if (sessionStorage.getItem('edu_demo_mode') !== 'true') {
-                window.location.href = '../index.html';
-            }
-        } else {
-            document.getElementById('studentEmail').textContent = window.eduAuth.currentUser.email;
-            
-            if (window.eduAuth.currentUser.email === ADMIN_EMAIL) {
-                console.log('Admin accessing student view');
-            }
-        }
-    }
-    
-    async loadDashboard() {
-        try {
-            await this.loadCourses();
-            
-            if (this.userId) {
-                await this.loadProgress();
-            }
-            
-        } catch (error) {
-            console.error('Dashboard load error:', error);
-            showToast('Failed to load content', 'danger');
+        // Check if user is admin trying to access student panel
+        if (window.auth && window.auth.currentUser && window.auth.currentUser.email === ADMIN_EMAIL) {
+            // Allow admin to view student panel
+            console.log('Admin viewing student panel');
         }
     }
     
@@ -68,9 +46,6 @@ class StudentPanel {
                 const course = { id: doc.id, ...doc.data() };
                 this.courses.push(course);
                 
-                const progress = this.progress[course.id] || { completed: 0, total: 0 };
-                const percent = progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0;
-                
                 html += `
                     <div class="col-md-4 mb-4">
                         <div class="course-card">
@@ -80,22 +55,10 @@ class StudentPanel {
                             <div class="course-card-body">
                                 <p class="text-muted">${course.description || 'No description available'}</p>
                                 
-                                <div class="mb-3">
-                                    <small class="text-muted">Progress:</small>
-                                    <div class="progress-bar">
-                                        <div class="progress-fill" style="width: ${percent}%"></div>
-                                    </div>
-                                    <small class="text-muted d-block text-end">${percent}%</small>
-                                </div>
-                                
                                 <div class="d-grid gap-2">
                                     <button class="btn btn-primary" 
-                                            onclick="viewCourseContent('${course.id}')">
-                                        <i class="fas fa-play"></i> Start Learning
-                                    </button>
-                                    <button class="btn btn-outline-secondary" 
-                                            onclick="viewCourseInfo('${course.id}')">
-                                        <i class="fas fa-info-circle"></i> Details
+                                            onclick="viewCourse('${course.id}')">
+                                        <i class="fas fa-play"></i> View Course
                                     </button>
                                 </div>
                             </div>
@@ -118,141 +81,89 @@ class StudentPanel {
         }
     }
     
-    async loadProgress() {
+    async viewCourse(courseId) {
         try {
-            if (!this.userId) return;
-            
-            const progressSnap = await this.db.collection('userProgress')
-                .where('userId', '==', this.userId)
-                .get();
-            
-            let totalCompleted = 0;
-            let totalViewed = 0;
-            let totalTests = 0;
-            let totalScore = 0;
-            
-            progressSnap.forEach(doc => {
-                const data = doc.data();
-                const courseId = data.courseId;
-                
-                this.progress[courseId] = {
-                    completed: data.completedContent?.length || 0,
-                    total: 0
-                };
-                
-                totalViewed += data.completedContent?.length || 0;
-                
-                if (data.testScores) {
-                    const scores = Object.values(data.testScores);
-                    totalTests += scores.length;
-                    totalScore += scores.reduce((a, b) => a + b, 0);
-                }
-            });
-            
-            document.getElementById('completedCourses').textContent = 
-                Object.keys(this.progress).length;
-            document.getElementById('viewedContent').textContent = totalViewed;
-            
-            if (totalTests > 0) {
-                const avgScore = Math.round(totalScore / totalTests);
-                document.getElementById('testScore').textContent = avgScore + '%';
-            }
-            
-        } catch (error) {
-            console.error('Load progress error:', error);
-        }
-    }
-    
-    async viewCourseContent(courseId) {
-        try {
+            // Load course content
             const contentSnap = await this.db.collection('courseContent')
                 .where('courseId', '==', courseId)
-                .where('isLocked', '!=', true)
                 .orderBy('order')
                 .get();
             
             if (contentSnap.empty) {
-                showToast('No content available for this course', 'warning');
+                EduUtils.showToast('No content available for this course', 'warning');
                 return;
             }
             
-            const firstContent = contentSnap.docs[0].data();
-            this.showContentViewer(firstContent);
+            // Show content in modal
+            const content = contentSnap.docs[0].data();
+            this.showContentViewer(content);
             
         } catch (error) {
             console.error('View course error:', error);
-            showToast('Failed to load course content', 'danger');
+            EduUtils.showToast('Failed to load course content', 'danger');
         }
     }
     
     async showContentViewer(content) {
         try {
-            const token = await window.eduAuth?.getAuthToken();
-            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-            
-            const response = await fetch(
-                `${BACKEND_URLS.active}/api/telegram/file/${content.telegramFileId}?viewer=google`,
-                { headers }
-            );
-            
-            if (!response.ok) throw new Error('File not found');
-            
-            const data = await response.json();
-            
             const modal = new bootstrap.Modal(document.getElementById('contentViewerModal'));
             document.getElementById('viewerTitle').textContent = content.title;
             
             let viewerHtml = '';
-            const fileType = content.type.toLowerCase();
+            const fileType = content.type?.toLowerCase();
             
-            if (fileType === 'pdf' || fileType === 'ppt' || fileType === 'pptx') {
-                viewerHtml = `
-                    <iframe src="${data.url}" 
-                            style="width:100%; height:600px; border:none;"
-                            frameborder="0"
-                            allow="autoplay"
-                            oncontextmenu="return false"
-                            onselectstart="return false"
-                            ondragstart="return false">
-                    </iframe>
-                `;
-            } else if (fileType === 'image') {
-                viewerHtml = `
-                    <div class="text-center">
-                        <img src="${data.url}" 
-                             class="img-fluid"
-                             style="max-height: 600px;"
-                             oncontextmenu="return false"
-                             draggable="false">
-                    </div>
-                `;
-            } else if (fileType === 'video') {
-                viewerHtml = `
-                    <div class="text-center">
-                        <video controls controlsList="nodownload" 
-                               style="max-width: 100%; max-height: 600px;"
-                               oncontextmenu="return false">
-                            <source src="${data.url}" type="video/mp4">
-                            Your browser does not support the video tag.
-                        </video>
-                    </div>
-                `;
+            if (content.downloadUrl) {
+                if (fileType === 'pdf') {
+                    // PDF viewer using Google Docs
+                    viewerHtml = `
+                        <iframe src="https://docs.google.com/viewer?url=${encodeURIComponent(content.downloadUrl)}&embedded=true" 
+                                style="width:100%; height:600px; border:none;"
+                                frameborder="0">
+                        </iframe>
+                    `;
+                } else if (fileType === 'image') {
+                    // Image viewer
+                    viewerHtml = `
+                        <div class="text-center">
+                            <img src="${content.downloadUrl}" 
+                                 class="img-fluid"
+                                 style="max-height: 600px;">
+                        </div>
+                    `;
+                } else if (fileType === 'video') {
+                    // Video viewer
+                    viewerHtml = `
+                        <div class="text-center">
+                            <video controls style="max-width: 100%; max-height: 600px;">
+                                <source src="${content.downloadUrl}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                    `;
+                } else {
+                    viewerHtml = `
+                        <div class="text-center py-5">
+                            <i class="fas fa-file fa-3x text-muted mb-3"></i>
+                            <h5>File Preview Not Available</h5>
+                            <p class="text-muted">This file type cannot be previewed in browser</p>
+                            <a href="${content.downloadUrl}" target="_blank" class="btn btn-primary">
+                                <i class="fas fa-download"></i> View File
+                            </a>
+                        </div>
+                    `;
+                }
             } else {
                 viewerHtml = `
                     <div class="text-center py-5">
-                        <i class="fas fa-file fa-3x text-muted mb-3"></i>
-                        <h5>File Preview Not Available</h5>
-                        <p class="text-muted">This file type cannot be previewed in browser</p>
+                        <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                        <h5>File Not Available</h5>
+                        <p class="text-muted">The content file is not accessible</p>
                     </div>
                 `;
             }
             
             document.getElementById('viewerContent').innerHTML = viewerHtml;
             modal.show();
-            
-            if (this.userId && content.id) {
-                this.trackContentViewed(content.id, content.courseId);
-            }
             
         } catch (error) {
             console.error('Show content error:', error);
@@ -265,48 +176,13 @@ class StudentPanel {
             `;
         }
     }
-    
-    async trackContentViewed(contentId, courseId) {
-        try {
-            if (!this.userId) return;
-            
-            const progressId = `${this.userId}_${courseId}`;
-            await this.db.collection('userProgress').doc(progressId).set({
-                userId: this.userId,
-                courseId: courseId,
-                completedContent: firebase.firestore.FieldValue.arrayUnion(contentId),
-                lastAccessed: firebase.firestore.FieldValue.serverTimestamp()
-            }, { merge: true });
-            
-        } catch (error) {
-            console.error('Track view error:', error);
-        }
+}
+
+// Global functions
+function viewCourse(courseId) {
+    if (window.studentPanel) {
+        window.studentPanel.viewCourse(courseId);
     }
-}
-
-// Helper functions
-function showToast(message, type = 'info') {
-    alert(message);
-}
-
-function viewCourseContent(courseId) {
-    window.studentPanel.viewCourseContent(courseId);
-}
-
-function viewPDFs() {
-    showToast('PDF viewer will open soon', 'info');
-}
-
-function viewVideos() {
-    showToast('Video lectures will open soon', 'info');
-}
-
-function viewMockTests() {
-    window.location.href = 'test.html';
-}
-
-function viewLiveClasses() {
-    window.location.href = 'live.html';
 }
 
 // Initialize
@@ -315,7 +191,8 @@ document.addEventListener('DOMContentLoaded', function() {
     studentPanel = new StudentPanel();
     window.studentPanel = studentPanel;
     
+    // Load courses after a short delay
     setTimeout(() => {
-        studentPanel.loadDashboard();
-    }, 500);
+        studentPanel.loadCourses();
+    }, 1000);
 });
