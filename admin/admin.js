@@ -2,8 +2,6 @@
 class AdminPanel {
     constructor() {
         this.courses = [];
-        this.content = [];
-        this.users = [];
         this.initFirestore();
     }
     
@@ -28,7 +26,7 @@ class AdminPanel {
             const usersSnap = await this.db.collection('users').where('role', '==', 'student').get();
             document.getElementById('totalStudents').textContent = usersSnap.size;
             
-            // Load Telegram files
+            // Load Telegram files count
             this.loadTelegramFilesCount();
             
             // Load courses list
@@ -36,13 +34,13 @@ class AdminPanel {
             
         } catch (error) {
             console.error('Dashboard load error:', error);
-            showError('Failed to load dashboard');
+            EduUtils.showToast('Failed to load dashboard', 'danger');
         }
     }
     
     async loadTelegramFilesCount() {
         try {
-            const response = await fetch(`${BACKEND_URLS.active}/api/files`);
+            const response = await fetch(`${BACKEND_URL}/api/files`);
             if (response.ok) {
                 const data = await response.json();
                 document.getElementById('telegramFiles').textContent = 
@@ -86,13 +84,9 @@ class AdminPanel {
                                 <p class="card-text text-muted">${course.description || 'No description'}</p>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <small class="text-muted">
-                                        Created: ${new Date(course.createdAt?.toDate()).toLocaleDateString()}
+                                        ${course.createdAt ? 'Created: ' + new Date(course.createdAt?.toDate()).toLocaleDateString() : ''}
                                     </small>
                                     <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-primary" 
-                                                onclick="viewCourse('${course.id}')">
-                                            <i class="fas fa-eye"></i> View
-                                        </button>
                                         <button class="btn btn-outline-warning" 
                                                 onclick="editCourse('${course.id}')">
                                             <i class="fas fa-edit"></i> Edit
@@ -109,7 +103,7 @@ class AdminPanel {
             
         } catch (error) {
             console.error('Load courses error:', error);
-            showError('Failed to load courses');
+            EduUtils.showToast('Failed to load courses', 'danger');
         }
     }
     
@@ -117,8 +111,11 @@ class AdminPanel {
         try {
             if (!confirm('Sync files from Telegram channel?')) return;
             
-            const token = await window.eduAuth.getAuthToken();
-            if (!token) throw new Error('Not authenticated');
+            const token = await auth.getToken();
+            if (!token) {
+                EduUtils.showToast('Please login first', 'warning');
+                return;
+            }
             
             // First, check if we have a course
             const coursesSnap = await this.db.collection('courses').get();
@@ -131,18 +128,23 @@ class AdminPanel {
             // Use first course for sync
             const courseId = coursesSnap.docs[0].id;
             
-            const response = await fetch(`${BACKEND_URLS.active}/api/admin/sync-telegram`, {
+            EduUtils.showToast('Syncing files from Telegram...', 'info');
+            
+            const response = await fetch(`${BACKEND_URL}/api/admin/sync-telegram`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ courseId })
+                body: JSON.stringify({ 
+                    courseId,
+                    channelId: TELEGRAM_CONFIG.publicChannelId 
+                })
             });
             
             if (response.ok) {
                 const data = await response.json();
-                alert(`Synced ${data.synced} files from Telegram`);
+                EduUtils.showToast(`Synced ${data.synced} files from Telegram`, 'success');
                 this.loadDashboard();
             } else {
                 throw new Error('Sync failed');
@@ -150,7 +152,7 @@ class AdminPanel {
             
         } catch (error) {
             console.error('Sync error:', error);
-            alert('Sync failed: ' + error.message);
+            EduUtils.showToast('Sync failed: ' + error.message, 'danger');
         }
     }
     
@@ -164,16 +166,19 @@ class AdminPanel {
                 return;
             }
             
-            const token = await window.eduAuth.getAuthToken();
-            if (!token) throw new Error('Not authenticated');
+            const token = await auth.getToken();
+            if (!token) {
+                EduUtils.showToast('Please login first', 'warning');
+                return;
+            }
             
             const courseData = {
                 title,
                 description,
                 isPublished: true,
-                createdBy: window.eduAuth.currentUser.uid,
+                createdBy: auth.currentUser.uid,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                telegramChannelId: '-1003687504990' // UPDATED
+                telegramChannelId: TELEGRAM_CONFIG.publicChannelId
             };
             
             await this.db.collection('courses').add(courseData);
@@ -188,19 +193,12 @@ class AdminPanel {
             // Reload courses
             this.loadDashboard();
             
-            showSuccess('Course created successfully');
+            EduUtils.showToast('Course created successfully', 'success');
             
         } catch (error) {
             console.error('Save course error:', error);
-            alert('Failed to create course: ' + error.message);
+            EduUtils.showToast('Failed to create course: ' + error.message, 'danger');
         }
-    }
-    
-    async viewCourse(courseId) {
-        // Save course ID to session
-        sessionStorage.setItem('currentCourseId', courseId);
-        // Redirect to course content page
-        window.location.href = `course.html?id=${courseId}`;
     }
     
     async editCourse(courseId) {
@@ -239,23 +237,27 @@ function showCreateCourse() {
 }
 
 function syncTelegramFiles() {
-    window.adminPanel.syncTelegramFiles();
+    if (window.adminPanel) {
+        window.adminPanel.syncTelegramFiles();
+    }
 }
 
 function saveCourse() {
-    window.adminPanel.saveCourse();
+    if (window.adminPanel) {
+        window.adminPanel.saveCourse();
+    }
 }
 
 function loadCourses() {
-    window.adminPanel.loadCourses();
+    if (window.adminPanel) {
+        window.adminPanel.loadCourses();
+    }
 }
 
-function showError(message) {
-    alert('Error: ' + message);
-}
-
-function showSuccess(message) {
-    alert('Success: ' + message);
+function editCourse(courseId) {
+    if (window.adminPanel) {
+        window.adminPanel.editCourse(courseId);
+    }
 }
 
 // Initialize
@@ -263,9 +265,4 @@ let adminPanel = null;
 document.addEventListener('DOMContentLoaded', function() {
     adminPanel = new AdminPanel();
     window.adminPanel = adminPanel;
-    
-    // Check if user is admin
-    if (window.eduAuth && window.eduAuth.currentUser && window.eduAuth.currentUser.email === ADMIN_EMAIL) {
-        adminPanel.loadDashboard();
-    }
 });
