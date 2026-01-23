@@ -1,52 +1,58 @@
 // Security System for EduAnon Platform
 class SecuritySystem {
     constructor() {
+        this.securityEnabled = true;
         this.initSecurity();
     }
     
     initSecurity() {
-        // Basic security measures
-        this.disableRightClick();
-        this.disableDevTools();
-        this.preventTextSelection();
+        if (window.location.pathname.includes('/student/') || 
+            window.location.pathname.includes('/admin/')) {
+            this.enableBasicSecurity();
+        }
         
         console.log('🔒 Security System Initialized');
     }
     
-    disableRightClick() {
-        document.addEventListener('contextmenu', (e) => {
-            if (window.location.pathname.includes('/student/')) {
-                e.preventDefault();
-                this.showSecurityWarning('Right-click disabled to protect content');
-                return false;
-            }
+    enableBasicSecurity() {
+        // Disable right click on student pages
+        if (window.location.pathname.includes('/student/')) {
+            this.disableRightClick();
+        }
+        
+        // Prevent text selection on student pages
+        if (window.location.pathname.includes('/student/')) {
+            this.preventTextSelection();
+        }
+        
+        // Log security events
+        this.logSecurityEvent('security_initialized', {
+            page: window.location.pathname,
+            time: new Date().toISOString()
         });
     }
     
-    disableDevTools() {
-        // Prevent F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'F12' || 
-                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C'))) {
-                e.preventDefault();
-                return false;
-            }
-        });
+    disableRightClick() {
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            this.showSecurityAlert('Right-click is disabled to protect content');
+            return false;
+        }, false);
     }
     
     preventTextSelection() {
-        // Only apply to student pages
-        if (window.location.pathname.includes('/student/')) {
+        // Only prevent on content areas
+        setTimeout(() => {
             const style = document.createElement('style');
             style.textContent = `
-                body {
+                .protected-content {
                     user-select: none;
                     -webkit-user-select: none;
                     -moz-user-select: none;
                     -ms-user-select: none;
                 }
                 
-                .allow-select {
+                .allow-selection {
                     user-select: text;
                     -webkit-user-select: text;
                     -moz-user-select: text;
@@ -54,30 +60,30 @@ class SecuritySystem {
                 }
             `;
             document.head.appendChild(style);
-        }
+        }, 1000);
     }
     
-    showSecurityWarning(message) {
-        // Create a temporary warning message
-        const warning = document.createElement('div');
-        warning.className = 'security-warning';
-        warning.innerHTML = `
+    showSecurityAlert(message) {
+        // Create security alert
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'security-alert';
+        alertDiv.innerHTML = `
             <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                <i class="fas fa-shield-alt"></i> ${message}
+                <i class="fas fa-shield-alt"></i> <strong>Security Notice:</strong> ${message}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         `;
         
         // Add styles
-        if (!document.querySelector('#security-warning-style')) {
+        if (!document.querySelector('#security-alert-style')) {
             const style = document.createElement('style');
-            style.id = 'security-warning-style';
+            style.id = 'security-alert-style';
             style.textContent = `
-                .security-warning {
+                .security-alert {
                     position: fixed;
                     top: 20px;
                     right: 20px;
-                    z-index: 9999;
+                    z-index: 99999;
                     min-width: 300px;
                     max-width: 400px;
                     animation: slideIn 0.3s ease-out;
@@ -90,30 +96,68 @@ class SecuritySystem {
             document.head.appendChild(style);
         }
         
-        document.body.appendChild(warning);
+        document.body.appendChild(alertDiv);
         
         // Auto remove after 3 seconds
         setTimeout(() => {
-            if (warning.parentNode) {
-                warning.remove();
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
             }
         }, 3000);
     }
     
-    // Public API
-    getSecurityReport() {
-        return {
-            securityEnabled: true,
-            rightClickDisabled: true,
-            devToolsDisabled: true,
-            textSelectionDisabled: window.location.pathname.includes('/student/')
+    logSecurityEvent(eventType, data = {}) {
+        const event = {
+            type: eventType,
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+            url: window.location.href,
+            ...data
         };
+        
+        console.log('🔒 Security Event:', event);
+        
+        // In production, send to backend
+        // this.sendToBackend(event);
+    }
+    
+    sendToBackend(event) {
+        // This would send security events to backend in production
+        fetch(`${BACKEND_URL}/api/security/log`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(event)
+        }).catch(error => {
+            console.error('Security log error:', error);
+        });
+    }
+    
+    // Public API
+    getSecurityStatus() {
+        return {
+            enabled: this.securityEnabled,
+            rightClickDisabled: window.location.pathname.includes('/student/'),
+            textSelectionDisabled: window.location.pathname.includes('/student/'),
+            timestamp: new Date().toISOString()
+        };
+    }
+    
+    toggleSecurity(enabled) {
+        this.securityEnabled = enabled;
+        console.log(`Security ${enabled ? 'enabled' : 'disabled'}`);
+        return this.securityEnabled;
     }
 }
 
 // Initialize security system
 let security = null;
 document.addEventListener('DOMContentLoaded', function() {
-    security = new SecuritySystem();
-    window.security = security;
+    // Only initialize on student and admin pages
+    if (window.location.pathname.includes('/student/') || 
+        window.location.pathname.includes('/admin/')) {
+        security = new SecuritySystem();
+        window.security = security;
+    }
 });
