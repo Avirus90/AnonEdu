@@ -6,9 +6,8 @@
     <title>Mock Tests - EduAnon</title>
     
     <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -17,14 +16,12 @@
     <!-- Student CSS -->
     <link rel="stylesheet" href="student.css">
     
-    <!-- Shared Config -->
-    <script src="../shared/firebase-config.js"></script>
-    
     <style>
         .test-container {
             max-width: 900px;
             margin: 0 auto;
             padding: 20px;
+            min-height: calc(100vh - 70px);
         }
         
         .test-card {
@@ -33,40 +30,44 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             margin-bottom: 25px;
             overflow: hidden;
+            border: 1px solid #dee2e6;
         }
         
         .test-header {
             background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
             color: white;
             padding: 25px;
+            text-align: center;
         }
         
-        .test-list-item {
-            padding: 15px;
+        .test-item {
+            padding: 20px;
             border-bottom: 1px solid #e9ecef;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            transition: all 0.3s;
         }
         
-        .test-list-item:hover {
+        .test-item:hover {
             background: #f8f9fa;
         }
         
-        .test-actions {
-            display: flex;
-            gap: 10px;
+        .test-info {
+            flex: 1;
         }
         
-        .coming-soon {
-            opacity: 0.6;
+        .test-actions {
+            min-width: 150px;
+            text-align: right;
         }
         
         .status-badge {
-            padding: 5px 10px;
+            padding: 5px 15px;
             border-radius: 20px;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
             font-weight: bold;
+            display: inline-block;
         }
         
         .status-available {
@@ -77,6 +78,20 @@
         .status-coming {
             background: #fff3cd;
             color: #856404;
+        }
+        
+        .test-meta {
+            display: flex;
+            gap: 15px;
+            margin-top: 8px;
+        }
+        
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+            color: #6c757d;
         }
     </style>
 </head>
@@ -100,48 +115,107 @@
 
     <div class="test-container">
         <div class="test-card">
-            <div class="test-header text-center">
-                <h2><i class="fas fa-brain"></i> Mock Tests</h2>
-                <p>Practice tests coming soon</p>
+            <div class="test-header">
+                <h2><i class="fas fa-brain"></i> Practice Tests</h2>
+                <p>Test your knowledge with timed quizzes</p>
             </div>
             
-            <div class="p-4">
-                <h4>Available Tests</h4>
-                <div id="testsList" class="mt-3">
-                    <div class="test-list-item">
-                        <div>
-                            <h5>Mathematics Test</h5>
-                            <p class="text-muted mb-0">Basic mathematics concepts</p>
-                        </div>
-                        <div class="test-actions">
-                            <span class="status-badge status-coming">Coming Soon</span>
-                        </div>
-                    </div>
-                    
-                    <div class="test-list-item">
-                        <div>
-                            <h5>Science Test</h5>
-                            <p class="text-muted mb-0">Physics, Chemistry, Biology</p>
-                        </div>
-                        <div class="test-actions">
-                            <span class="status-badge status-coming">Coming Soon</span>
+            <div id="testsContent">
+                <div class="test-item">
+                    <div class="test-info">
+                        <h5 class="mb-2">Mathematics Practice Test</h5>
+                        <p class="text-muted mb-2">Basic mathematics concepts, algebra, geometry</p>
+                        <div class="test-meta">
+                            <span class="meta-item">
+                                <i class="fas fa-clock"></i> 30 min
+                            </span>
+                            <span class="meta-item">
+                                <i class="fas fa-question-circle"></i> 20 questions
+                            </span>
+                            <span class="meta-item">
+                                <i class="fas fa-chart-line"></i> Intermediate
+                            </span>
                         </div>
                     </div>
-                    
-                    <div class="test-list-item">
-                        <div>
-                            <h5>English Test</h5>
-                            <p class="text-muted mb-0">Grammar and comprehension</p>
-                        </div>
-                        <div class="test-actions">
-                            <span class="status-badge status-coming">Coming Soon</span>
-                        </div>
+                    <div class="test-actions">
+                        <span class="status-badge status-coming">Coming Soon</span>
                     </div>
                 </div>
                 
-                <div class="alert alert-info mt-4">
-                    <h6><i class="fas fa-info-circle"></i> Information:</h6>
-                    <p class="mb-0">Mock tests feature will be available in the next update. You'll be able to take timed tests with instant results.</p>
+                <div class="test-item">
+                    <div class="test-info">
+                        <h5 class="mb-2">Science Comprehensive Test</h5>
+                        <p class="text-muted mb-2">Physics, Chemistry, Biology fundamentals</p>
+                        <div class="test-meta">
+                            <span class="meta-item">
+                                <i class="fas fa-clock"></i> 45 min
+                            </span>
+                            <span class="meta-item">
+                                <i class="fas fa-question-circle"></i> 30 questions
+                            </span>
+                            <span class="meta-item">
+                                <i class="fas fa-chart-line"></i> Advanced
+                            </span>
+                        </div>
+                    </div>
+                    <div class="test-actions">
+                        <span class="status-badge status-coming">Coming Soon</span>
+                    </div>
+                </div>
+                
+                <div class="test-item">
+                    <div class="test-info">
+                        <h5 class="mb-2">English Grammar Test</h5>
+                        <p class="text-muted mb-2">Grammar rules, comprehension, vocabulary</p>
+                        <div class="test-meta">
+                            <span class="meta-item">
+                                <i class="fas fa-clock"></i> 25 min
+                            </span>
+                            <span class="meta-item">
+                                <i class="fas fa-question-circle"></i> 25 questions
+                            </span>
+                            <span class="meta-item">
+                                <i class="fas fa-chart-line"></i> Basic
+                            </span>
+                        </div>
+                    </div>
+                    <div class="test-actions">
+                        <span class="status-badge status-coming">Coming Soon</span>
+                    </div>
+                </div>
+                
+                <div class="test-item">
+                    <div class="test-info">
+                        <h5 class="mb-2">General Knowledge Test</h5>
+                        <p class="text-muted mb-2">Current affairs, history, geography</p>
+                        <div class="test-meta">
+                            <span class="meta-item">
+                                <i class="fas fa-clock"></i> 20 min
+                            </span>
+                            <span class="meta-item">
+                                <i class="fas fa-question-circle"></i> 15 questions
+                            </span>
+                            <span class="meta-item">
+                                <i class="fas fa-chart-line"></i> Easy
+                            </span>
+                        </div>
+                    </div>
+                    <div class="test-actions">
+                        <span class="status-badge status-coming">Coming Soon</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4">
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle"></i> About Mock Tests:</h6>
+                    <ul class="mb-0">
+                        <li>Timed tests with automatic submission</li>
+                        <li>Instant results and score calculation</li>
+                        <li>Detailed solutions and explanations</li>
+                        <li>Performance tracking over time</li>
+                        <li>Coming in the next update</li>
+                    </ul>
                 </div>
             </div>
         </div>
@@ -149,8 +223,8 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../shared/firebase-config.js"></script>
     <script src="../shared/auth.js"></script>
-    <script src="../shared/utils.js"></script>
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -158,6 +232,14 @@
             const isDemo = sessionStorage.getItem('edu_demo_mode') === 'true';
             if (!window.auth && !isDemo) {
                 window.location.href = 'index.html';
+            }
+            
+            // Set user email if logged in
+            if (window.auth && window.auth.currentUser) {
+                const emailElement = document.getElementById('userEmail');
+                if (emailElement) {
+                    emailElement.textContent = window.auth.currentUser.email;
+                }
             }
         });
     </script>
