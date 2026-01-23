@@ -8,7 +8,7 @@ const FIREBASE_CONFIG = {
     appId: "1:378269868239:web:951d8ca35fd252313dd7ba"
 };
 
-// Backend URLs (GitHub Pages compatible) - UPDATED
+// Backend URLs
 const BACKEND_URLS = {
     local: "http://localhost:3000",
     vercel: "https://anon-edu-backend-anon.vercel.app",
@@ -17,11 +17,12 @@ const BACKEND_URLS = {
     }
 };
 
-// Telegram Configuration - UPDATED
+// Telegram Configuration
 const TELEGRAM_CONFIG = {
-    bot: "@ANONEDU_Bot",
+    botToken: "8151664879:AAGggzn4M2Iv-9lHAUJXjCVPGKnKyr7IZMc",
+    botUsername: "@ANONEDU_Bot",
     publicChannel: "@ANON_EDU",
-    privateChannel: "-1003687504990",
+    publicChannelId: "-1003687504990",
     publicLink: "https://t.me/ANON_EDU",
     privateLink: "https://t.me/+oG9POSOSZes3MDJl"
 };
@@ -34,10 +35,7 @@ const GITHUB_PAGES_URL = "https://avirus90.github.io/AnonEdu/";
 
 // Export for use
 window.FIREBASE_CONFIG = FIREBASE_CONFIG;
-window.BACKEND_URLS = BACKEND_URLS;
+window.BACKEND_URL = BACKEND_URLS.active;
 window.TELEGRAM_CONFIG = TELEGRAM_CONFIG;
 window.ADMIN_EMAIL = ADMIN_EMAIL;
 window.GITHUB_PAGES_URL = GITHUB_PAGES_URL;
-
-// Alias for backward compatibility
-window.BACKEND_URL = BACKEND_URLS.active;
