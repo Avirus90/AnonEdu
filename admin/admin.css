@@ -8,17 +8,9 @@
 }
 
 .admin-container {
-    max-width: 1400px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
-}
-
-.admin-header {
-    background: var(--admin-primary);
-    color: white;
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 20px;
 }
 
 .admin-card {
@@ -34,6 +26,7 @@
     padding: 15px 20px;
     border-bottom: 1px solid #dee2e6;
     font-weight: bold;
+    font-size: 1.1rem;
 }
 
 .admin-card-body {
@@ -46,26 +39,13 @@
     border-radius: 10px;
     color: white;
     margin-bottom: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 .stat-card.primary { background: var(--admin-primary); }
 .stat-card.secondary { background: var(--admin-secondary); }
 .stat-card.success { background: var(--admin-success); }
 .stat-card.warning { background: var(--admin-warning); }
-
-.file-preview {
-    border: 2px dashed #ddd;
-    border-radius: 10px;
-    padding: 30px;
-    text-align: center;
-    margin: 20px 0;
-    transition: all 0.3s;
-}
-
-.file-preview:hover {
-    border-color: var(--admin-secondary);
-    background: #f8f9fa;
-}
 
 .btn-admin {
     background: var(--admin-primary);
@@ -74,6 +54,8 @@
     padding: 10px 20px;
     border-radius: 5px;
     transition: all 0.3s;
+    width: 100%;
+    margin: 5px 0;
 }
 
 .btn-admin:hover {
@@ -85,10 +67,6 @@
 @media (max-width: 768px) {
     .admin-container {
         padding: 10px;
-    }
-    
-    .admin-header {
-        padding: 15px;
     }
     
     .admin-card-body {
