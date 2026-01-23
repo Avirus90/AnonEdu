@@ -12,7 +12,7 @@ class EduUtils {
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         `;
         
-        // Add styles
+        // Add styles if not already added
         if (!document.querySelector('#toast-style')) {
             const style = document.createElement('style');
             style.id = 'toast-style';
@@ -99,6 +99,22 @@ class EduUtils {
         if (type.includes('audio')) return icons.audio;
         
         return icons.default;
+    }
+    
+    static showLoading(show = true) {
+        if (show) {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'global-loading';
+            loadingDiv.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+                    <div class="spinner-border text-light" style="width: 3rem; height: 3rem;"></div>
+                </div>
+            `;
+            document.body.appendChild(loadingDiv);
+        } else {
+            const loadingDiv = document.getElementById('global-loading');
+            if (loadingDiv) loadingDiv.remove();
+        }
     }
 }
 
