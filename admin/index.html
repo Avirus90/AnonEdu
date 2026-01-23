@@ -6,9 +6,9 @@
     <title>Admin Panel - EduAnon</title>
     
     <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -16,9 +16,6 @@
     
     <!-- Admin CSS -->
     <link rel="stylesheet" href="admin.css">
-    
-    <!-- Shared Config -->
-    <script src="../shared/firebase-config.js"></script>
 </head>
 <body>
     <!-- Navigation -->
@@ -28,7 +25,7 @@
                 <i class="fas fa-user-shield"></i> EduAnon Admin
             </a>
             <div class="d-flex align-items-center">
-                <span class="text-light me-3" id="adminEmail"></span>
+                <span class="text-light me-3" id="adminEmail">Loading...</span>
                 <button class="btn btn-outline-light btn-sm" onclick="window.auth.logout()">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
@@ -41,28 +38,28 @@
         <div class="row mt-4">
             <div class="col-md-3">
                 <div class="stat-card primary">
-                    <h3 id="totalCourses">0</h3>
+                    <div class="stat-value" id="totalCourses">0</div>
                     <p>Total Courses</p>
                     <i class="fas fa-book fa-2x"></i>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stat-card secondary">
-                    <h3 id="totalContent">0</h3>
+                    <div class="stat-value" id="totalContent">0</div>
                     <p>Content Items</p>
                     <i class="fas fa-file fa-2x"></i>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stat-card success">
-                    <h3 id="totalStudents">0</h3>
+                    <div class="stat-value" id="totalStudents">0</div>
                     <p>Students</p>
                     <i class="fas fa-users fa-2x"></i>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stat-card warning">
-                    <h3 id="telegramFiles">0</h3>
+                    <div class="stat-value" id="telegramFiles">0</div>
                     <p>Telegram Files</p>
                     <i class="fab fa-telegram fa-2x"></i>
                 </div>
@@ -92,12 +89,23 @@
                         
                         <!-- Telegram Channel Info -->
                         <div class="mt-4 p-3 bg-light rounded">
-                            <h6><i class="fab fa-telegram"></i> Telegram:</h6>
+                            <h6><i class="fab fa-telegram"></i> Telegram Channel:</h6>
                             <p class="mb-1">
-                                <small>Channel: @ANON_EDU</small>
+                                <small>@ANON_EDU</small>
+                            </p>
+                            <p class="mb-1">
+                                <small>ID: -1003687504990</small>
                             </p>
                             <p class="mb-0">
                                 <small>Bot: @ANONEDU_Bot</small>
+                            </p>
+                        </div>
+                        
+                        <!-- Backend Status -->
+                        <div class="mt-3 p-3 bg-light rounded">
+                            <h6><i class="fas fa-server"></i> Backend:</h6>
+                            <p class="mb-0">
+                                <small id="backendStatus">Checking...</small>
                             </p>
                         </div>
                     </div>
@@ -127,7 +135,7 @@
     </div>
 
     <!-- Create Course Modal -->
-    <div class="modal fade" id="createCourseModal">
+    <div class="modal fade" id="createCourseModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -137,12 +145,14 @@
                 <div class="modal-body">
                     <form id="courseForm">
                         <div class="mb-3">
-                            <label class="form-label">Course Title</label>
-                            <input type="text" class="form-control" id="courseTitle" required>
+                            <label class="form-label">Course Title *</label>
+                            <input type="text" class="form-control" id="courseTitle" required 
+                                   placeholder="Enter course title">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Description</label>
-                            <textarea class="form-control" id="courseDescription" rows="3"></textarea>
+                            <textarea class="form-control" id="courseDescription" rows="3"
+                                      placeholder="Enter course description"></textarea>
                         </div>
                     </form>
                 </div>
@@ -158,41 +168,33 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../shared/firebase-config.js"></script>
     <script src="../shared/auth.js"></script>
     <script src="../shared/utils.js"></script>
     <script src="admin.js"></script>
     
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Admin Panel Loaded');
-            
-            // Wait for auth to initialize
-            setTimeout(() => {
-                checkAdminAccess();
-                loadDashboard();
-            }, 500);
-        });
-
-        function checkAdminAccess() {
-            if (!window.auth || !window.auth.currentUser) {
-                window.location.href = '../index.html';
-                return;
-            }
-            
-            const email = window.auth.currentUser.email;
-            document.getElementById('adminEmail').textContent = email;
-            
-            if (email !== ADMIN_EMAIL) {
-                alert('Access Denied: Admin only');
-                window.auth.logout();
+        // Check backend status
+        async function checkBackendStatus() {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/test`);
+                if (response.ok) {
+                    document.getElementById('backendStatus').innerHTML = 
+                        '<span class="text-success">✅ Online</span>';
+                } else {
+                    document.getElementById('backendStatus').innerHTML = 
+                        '<span class="text-danger">❌ Offline</span>';
+                }
+            } catch (error) {
+                document.getElementById('backendStatus').innerHTML = 
+                    '<span class="text-danger">❌ Error</span>';
             }
         }
         
-        function loadDashboard() {
-            if (window.adminPanel) {
-                window.adminPanel.loadDashboard();
-            }
-        }
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Admin Panel Loaded');
+            checkBackendStatus();
+        });
     </script>
 </body>
 </html>
