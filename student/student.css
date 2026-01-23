@@ -26,6 +26,7 @@
     margin-bottom: 25px;
     overflow: hidden;
     transition: all 0.3s;
+    border: 1px solid #e9ecef;
 }
 
 .course-card:hover {
@@ -35,70 +36,22 @@
 
 .course-card-header {
     background: #f8f9fa;
-    padding: 20px;
-    border-bottom: 2px solid #e9ecef;
+    padding: 15px 20px;
+    border-bottom: 1px solid #e9ecef;
     font-weight: bold;
     font-size: 1.1rem;
 }
 
 .course-card-body {
-    padding: 25px;
-}
-
-.content-item {
-    padding: 15px;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    transition: all 0.2s;
-}
-
-.content-item:hover {
-    background: #f8f9fa;
-    border-color: var(--student-primary);
-}
-
-.content-icon {
-    width: 50px;
-    height: 50px;
-    background: var(--student-primary);
-    color: white;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-}
-
-.progress-bar {
-    height: 8px;
-    background: #e9ecef;
-    border-radius: 4px;
-    overflow: hidden;
-    margin: 10px 0;
-}
-
-.progress-fill {
-    height: 100%;
-    background: var(--student-secondary);
-    border-radius: 4px;
-    transition: width 0.5s ease;
+    padding: 20px;
 }
 
 .viewer-container {
-    border: 2px solid #dee2e6;
+    border: 1px solid #dee2e6;
     border-radius: 10px;
     overflow: hidden;
     margin: 20px 0;
-}
-
-.viewer-container iframe {
-    width: 100%;
-    height: 600px;
-    border: none;
+    min-height: 400px;
 }
 
 /* Responsive */
@@ -113,14 +66,5 @@
     
     .course-card-body {
         padding: 15px;
-    }
-    
-    .content-item {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .viewer-container iframe {
-        height: 400px;
     }
 }
