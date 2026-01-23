@@ -17,8 +17,7 @@ class MockTestSystem {
         try {
             const testsList = document.getElementById('testsList');
             
-            // Try to fetch tests from backend
-            const response = await fetch(`${BACKEND_URL}/api/files`);
+            const response = await fetch(`${BACKEND_URLS.active}/api/files`);
             
             if (!response.ok) {
                 throw new Error('Failed to load tests');
@@ -27,7 +26,6 @@ class MockTestSystem {
             const data = await response.json();
             const files = data.files || [];
             
-            // Filter TXT files (mock tests)
             const txtFiles = files.filter(file => 
                 file.name && file.name.toLowerCase().includes('.txt')
             );
@@ -98,15 +96,13 @@ class MockTestSystem {
     
     async startTest(fileId) {
         try {
-            // Show loading
             document.getElementById('testSelection').style.display = 'none';
             document.getElementById('testInterface').style.display = 'block';
             
-            // Load test questions from backend
-            const token = await auth?.getToken();
+            const token = await window.eduAuth?.getAuthToken();
             const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
             
-            const response = await fetch(`${BACKEND_URL}/api/mock-test/${fileId}`, { headers });
+            const response = await fetch(`${BACKEND_URLS.active}/api/mock-test/${fileId}`, { headers });
             
             if (!response.ok) {
                 throw new Error('Failed to load test questions');
@@ -118,7 +114,6 @@ class MockTestSystem {
                 throw new Error('No questions found in test file');
             }
             
-            // Initialize test
             this.questions = data.questions;
             this.userAnswers = {};
             this.markedForReview.clear();
@@ -126,22 +121,17 @@ class MockTestSystem {
             this.startTime = new Date();
             this.isTestActive = true;
             
-            // Calculate test duration (1 minute per question)
-            this.timeRemaining = this.questions.length * 60; // in seconds
+            this.timeRemaining = this.questions.length * 60;
             
-            // Update UI
             document.getElementById('testTitle').textContent = `Mock Test - ${this.questions.length} Questions`;
             document.getElementById('testInfo').textContent = 
                 `Time: ${Math.floor(this.timeRemaining / 60)} mins • Questions: ${this.questions.length}`;
             document.getElementById('totalQuestions').textContent = this.questions.length;
             
-            // Start timer
             this.startTimer();
             
-            // Load first question
             this.loadQuestion(this.currentQuestionIndex);
             
-            // Create question palette
             this.createQuestionPalette();
             
         } catch (error) {
@@ -171,8 +161,7 @@ class MockTestSystem {
         
         timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         
-        // Add warning class when less than 5 minutes
-        if (this.timeRemaining < 300) { // 5 minutes
+        if (this.timeRemaining < 300) {
             timerElement.classList.add('warning');
         } else {
             timerElement.classList.remove('warning');
@@ -185,20 +174,17 @@ class MockTestSystem {
         this.currentQuestionIndex = index;
         const question = this.questions[index];
         
-        // Update progress
         const progressPercent = Math.round(((index + 1) / this.questions.length) * 100);
         document.getElementById('testProgress').style.width = `${progressPercent}%`;
         document.getElementById('progressPercent').textContent = progressPercent;
         document.getElementById('currentQuestion').textContent = index + 1;
         
-        // Update navigation buttons
         document.getElementById('prevBtn').disabled = index === 0;
         document.getElementById('nextBtn').innerHTML = 
             index === this.questions.length - 1 ? 
             'Submit <i class="fas fa-paper-plane"></i>' : 
             'Next <i class="fas fa-arrow-right"></i>';
         
-        // Create question HTML
         let optionsHtml = '';
         const questionNumber = index + 1;
         const userAnswer = this.userAnswers[questionNumber];
@@ -246,29 +232,24 @@ class MockTestSystem {
         
         document.getElementById('questionsContainer').innerHTML = questionHtml;
         
-        // Update question palette
         this.updateQuestionPalette();
     }
     
     selectOption(questionNumber, optionLetter) {
         this.userAnswers[questionNumber] = optionLetter;
         
-        // Update UI
         const questionElement = document.querySelector('.question-card.active');
         if (questionElement) {
-            // Remove selected class from all options
             questionElement.querySelectorAll('.option-label').forEach(label => {
                 label.classList.remove('selected');
             });
             
-            // Add selected class to chosen option
             const selectedOption = questionElement.querySelector(`input[value="${optionLetter}"]`);
             if (selectedOption) {
                 selectedOption.parentElement.classList.add('selected');
             }
         }
         
-        // Update question palette
         this.updateQuestionPalette();
     }
     
@@ -279,7 +260,6 @@ class MockTestSystem {
             this.markedForReview.add(questionNumber);
         }
         
-        // Reload current question to update UI
         this.loadQuestion(this.currentQuestionIndex);
     }
     
@@ -344,7 +324,6 @@ class MockTestSystem {
     
     async submitTest() {
         try {
-            // Stop timer
             if (this.timerInterval) {
                 clearInterval(this.timerInterval);
                 this.timerInterval = null;
@@ -352,15 +331,12 @@ class MockTestSystem {
             
             this.isTestActive = false;
             
-            // Calculate results
             const results = this.calculateResults();
             this.testResults = results;
             
-            // Show results screen
             this.showResults(results);
             
-            // Save score if user is logged in
-            if (auth && auth.currentUser) {
+            if (window.eduAuth && window.eduAuth.currentUser) {
                 await this.saveTestScore(results);
             }
             
@@ -390,9 +366,8 @@ class MockTestSystem {
         const total = this.questions.length;
         const score = total > 0 ? Math.round((correct / total) * 100) : 0;
         
-        // Calculate time taken
         const endTime = new Date();
-        const timeTaken = Math.round((endTime - this.startTime) / 1000 / 60); // in minutes
+        const timeTaken = Math.round((endTime - this.startTime) / 1000 / 60);
         
         return {
             correct,
@@ -406,18 +381,15 @@ class MockTestSystem {
     }
     
     showResults(results) {
-        // Hide test interface
         document.getElementById('testInterface').style.display = 'none';
         document.getElementById('resultsScreen').style.display = 'block';
         
-        // Update results UI
         document.getElementById('finalScore').textContent = `${results.score}%`;
         document.getElementById('correctAnswers').textContent = results.correct;
         document.getElementById('wrongAnswers').textContent = results.wrong;
         document.getElementById('skippedQuestions').textContent = results.skipped;
         document.getElementById('timeTaken').textContent = results.timeTaken;
         
-        // Set result message
         const messageElement = document.getElementById('resultMessage');
         if (results.score >= 80) {
             messageElement.textContent = 'Excellent! You have mastered this topic.';
@@ -433,7 +405,6 @@ class MockTestSystem {
             messageElement.className = 'lead text-danger';
         }
         
-        // Hide saving status after 3 seconds
         setTimeout(() => {
             document.getElementById('scoreSaveStatus').style.display = 'none';
         }, 3000);
@@ -441,11 +412,8 @@ class MockTestSystem {
     
     async saveTestScore(results) {
         try {
-            // This would save to Firebase in a real implementation
-            // For now, we'll just log it
             console.log('Test results:', results);
             
-            // Simulate saving
             setTimeout(() => {
                 const statusElement = document.getElementById('scoreSaveStatus');
                 statusElement.innerHTML = `
@@ -466,9 +434,7 @@ class MockTestSystem {
         document.getElementById('testSelection').style.display = 'block';
     }
     
-    // Demo/test functions
     async loadSampleTest() {
-        // Create sample questions for demo
         const sampleQuestions = [
             {
                 question: "What is the capital of France?",
@@ -497,32 +463,27 @@ class MockTestSystem {
             }
         ];
         
-        // Simulate starting a test
         this.questions = sampleQuestions;
         this.userAnswers = {};
         this.markedForReview.clear();
         this.currentQuestionIndex = 0;
         this.startTime = new Date();
         this.isTestActive = true;
-        this.timeRemaining = 300; // 5 minutes for demo
+        this.timeRemaining = 300;
         
-        // Update UI
         document.getElementById('testSelection').style.display = 'none';
         document.getElementById('testInterface').style.display = 'block';
         document.getElementById('testTitle').textContent = 'Sample Test - 5 Questions';
         document.getElementById('testInfo').textContent = 'Time: 5 mins • Questions: 5';
         document.getElementById('totalQuestions').textContent = '5';
         
-        // Start timer
         this.startTimer();
         
-        // Load first question
         this.loadQuestion(this.currentQuestionIndex);
         this.createQuestionPalette();
     }
     
     reviewAnswers() {
-        // This would show detailed review of answers
         alert('Review feature will be implemented in the next version.');
     }
     
@@ -536,7 +497,7 @@ class MockTestSystem {
     }
 }
 
-// Global functions for HTML onclick
+// Global functions
 function startTest(fileId) {
     window.testSystem.startTest(fileId);
 }
@@ -581,6 +542,5 @@ document.addEventListener('DOMContentLoaded', function() {
     testSystem = new MockTestSystem();
     window.testSystem = testSystem;
     
-    // Load available tests
     testSystem.loadAvailableTests();
 });
