@@ -1,4 +1,5 @@
-// Authentication Utilities for EduAnon Platform
+// Authentication Utilities for EduAnon Platform (GitHub Pages Version)
+
 class EduAuth {
     constructor() {
         this.currentUser = null;
@@ -14,7 +15,7 @@ class EduAuth {
             if (!firebase.apps.length) {
                 firebase.initializeApp(FIREBASE_CONFIG);
             }
-            console.log('✅ Firebase initialized');
+            console.log('✅ Firebase initialized for GitHub Pages');
         } catch (error) {
             console.error('Firebase init error:', error);
         }
@@ -37,6 +38,7 @@ class EduAuth {
                 console.log('👤 No user logged in');
                 this.userRole = null;
                 
+                // If not demo mode and not on landing page, redirect
                 if (!this.isDemoMode && 
                     !window.location.pathname.endsWith('index.html') &&
                     !window.location.pathname.endsWith('/')) {
@@ -91,6 +93,7 @@ class EduAuth {
     }
     
     applyRoleBasedUI() {
+        // Show user info in header if element exists
         const userInfoEl = document.getElementById('userInfo');
         if (userInfoEl && this.currentUser) {
             userInfoEl.innerHTML = `
@@ -106,7 +109,7 @@ class EduAuth {
                             </span>
                         </span></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><button class="dropdown-item" onclick="eduAuth.logout()">
+                        <li><button class="dropdown-item" onclick="window.eduAuth.logout()">
                             <i class="fas fa-sign-out-alt"></i> Logout
                         </button></li>
                     </ul>
@@ -176,7 +179,7 @@ class EduAuth {
         }
     }
     
-    async getToken() {
+    async getAuthToken() {
         if (!this.currentUser) return null;
         return await this.currentUser.getIdToken();
     }
@@ -201,9 +204,6 @@ class EduAuth {
 }
 
 // Initialize when DOM is ready
-let eduAuth = null;
 document.addEventListener('DOMContentLoaded', function() {
-    eduAuth = new EduAuth();
-    window.eduAuth = eduAuth;
-    window.auth = eduAuth; // Alias for compatibility
+    window.eduAuth = new EduAuth();
 });
