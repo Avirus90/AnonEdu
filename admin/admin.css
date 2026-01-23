@@ -11,6 +11,7 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
+    min-height: calc(100vh - 70px);
 }
 
 .admin-card {
@@ -19,12 +20,13 @@
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     margin-bottom: 20px;
     overflow: hidden;
+    border: 1px solid #dee2e6;
 }
 
 .admin-card-header {
-    background: #f8f9fa;
+    background: linear-gradient(135deg, var(--admin-primary) 0%, var(--admin-secondary) 100%);
+    color: white;
     padding: 15px 20px;
-    border-bottom: 1px solid #dee2e6;
     font-weight: bold;
     font-size: 1.1rem;
 }
@@ -40,12 +42,23 @@
     color: white;
     margin-bottom: 15px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
 }
 
 .stat-card.primary { background: var(--admin-primary); }
 .stat-card.secondary { background: var(--admin-secondary); }
 .stat-card.success { background: var(--admin-success); }
 .stat-card.warning { background: var(--admin-warning); }
+
+.stat-card .stat-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
 
 .btn-admin {
     background: var(--admin-primary);
@@ -61,6 +74,7 @@
 .btn-admin:hover {
     background: var(--admin-secondary);
     transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
 /* Responsive */
