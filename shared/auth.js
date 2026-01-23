@@ -1,10 +1,12 @@
-// Authentication System for EduAnon
+// Authentication System for EduAnon - FIXED VERSION
 class EduAuth {
     constructor() {
         this.currentUser = null;
         this.userRole = null;
+        this.initialized = false;
+        
+        console.log('🔐 Auth system initializing...');
         this.initFirebase();
-        this.setupAuthListeners();
     }
     
     initFirebase() {
@@ -12,7 +14,11 @@ class EduAuth {
             if (!firebase.apps.length) {
                 firebase.initializeApp(FIREBASE_CONFIG);
             }
-            console.log('✅ Firebase initialized');
+            
+            this.setupAuthListeners();
+            this.initialized = true;
+            console.log('✅ Firebase Auth initialized');
+            
         } catch (error) {
             console.error('Firebase init error:', error);
         }
@@ -25,16 +31,11 @@ class EduAuth {
             if (user) {
                 console.log('👤 User logged in:', user.email);
                 await this.determineUserRole(user);
-                this.redirectBasedOnRole();
+                this.updateUI();
             } else {
                 console.log('👤 No user logged in');
                 this.userRole = null;
-                
-                // Only redirect if not on landing page
-                if (!window.location.pathname.includes('index.html') && 
-                    window.location.pathname !== '/') {
-                    window.location.href = '../index.html';
-                }
+                this.updateUI();
             }
         });
     }
@@ -48,21 +49,17 @@ class EduAuth {
         console.log('Role determined:', this.userRole);
     }
     
-    redirectBasedOnRole() {
-        const currentPath = window.location.pathname;
+    updateUI() {
+        // Update email display if elements exist
+        const adminEmailElement = document.getElementById('adminEmail');
+        const studentEmailElement = document.getElementById('studentEmail');
         
-        // If user is admin
-        if (this.userRole === 'admin') {
-            // If not on admin page, redirect to admin
-            if (!currentPath.includes('/admin/')) {
-                window.location.href = 'admin/index.html';
+        if (this.currentUser) {
+            if (adminEmailElement) {
+                adminEmailElement.textContent = this.currentUser.email;
             }
-        } 
-        // If user is student
-        else if (this.userRole === 'student') {
-            // If on admin page, redirect to student
-            if (currentPath.includes('/admin/')) {
-                window.location.href = '../student/index.html';
+            if (studentEmailElement) {
+                studentEmailElement.textContent = this.currentUser.email;
             }
         }
     }
@@ -113,6 +110,11 @@ class EduAuth {
 // Initialize when DOM is ready
 let auth = null;
 document.addEventListener('DOMContentLoaded', function() {
-    auth = new EduAuth();
-    window.auth = auth;
+    // Delay initialization to avoid conflicts
+    setTimeout(() => {
+        if (!window.auth) {
+            auth = new EduAuth();
+            window.auth = auth;
+        }
+    }, 1000);
 });
