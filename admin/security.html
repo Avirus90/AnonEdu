@@ -5,24 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Security Dashboard - EduAnon</title>
     
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-    
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Admin CSS -->
-    <link rel="stylesheet" href="admin.css">
-    
-    <!-- Shared Config -->
-    <script src="../shared/firebase-config.js"></script>
-    
     <style>
         .security-container {
-            max-width: 1200px;
-            margin: 0 auto;
+            max-width: 800px;
+            margin: 50px auto;
             padding: 20px;
         }
         
@@ -30,7 +20,6 @@
             background: white;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            margin-bottom: 25px;
             overflow: hidden;
         }
         
@@ -38,164 +27,44 @@
             background: linear-gradient(135deg, #2c3e50 0%, #c0392b 100%);
             color: white;
             padding: 25px;
-        }
-        
-        .security-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            padding: 20px;
-        }
-        
-        .stat-item {
             text-align: center;
-            padding: 20px;
-            border-radius: 10px;
-            background: #f8f9fa;
         }
         
-        .stat-value {
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        
-        .security-actions {
-            padding: 20px;
-        }
-        
-        .action-btn {
-            width: 100%;
-            margin: 10px 0;
-            padding: 15px;
-            text-align: left;
+        .security-content {
+            padding: 30px;
         }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="index.html">
-                <i class="fas fa-shield-alt"></i> Security Dashboard
-            </a>
-            <div class="d-flex align-items-center">
-                <a href="index.html" class="btn btn-outline-light btn-sm me-2">
-                    <i class="fas fa-arrow-left"></i> Back to Admin
-                </a>
-                <button class="btn btn-outline-light btn-sm" onclick="window.auth.logout()">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </button>
-            </div>
-        </div>
-    </nav>
-
     <div class="security-container">
         <div class="security-card">
             <div class="security-header">
-                <h2><i class="fas fa-shield-alt"></i> Security Center</h2>
-                <p class="mb-0">Monitor and manage platform security</p>
+                <h2><i class="fas fa-shield-alt"></i> Security Dashboard</h2>
+                <p class="mb-0">Coming in Next Update</p>
             </div>
             
-            <div class="security-stats">
-                <div class="stat-item">
-                    <div class="stat-value text-success" id="activeUsers">0</div>
-                    <div>Active Users</div>
-                </div>
+            <div class="security-content text-center">
+                <i class="fas fa-lock fa-4x text-muted mb-4"></i>
+                <h4>Security Features Coming Soon</h4>
+                <p class="text-muted">Advanced security monitoring and management features will be available in the next update.</p>
                 
-                <div class="stat-item">
-                    <div class="stat-value text-primary" id="totalSessions">0</div>
-                    <div>Total Sessions</div>
-                </div>
-                
-                <div class="stat-item">
-                    <div class="stat-value text-warning" id="securityEvents">0</div>
-                    <div>Security Events</div>
-                </div>
-                
-                <div class="stat-item">
-                    <div class="stat-value text-info" id="blockedAttempts">0</div>
-                    <div>Blocked Attempts</div>
-                </div>
-            </div>
-            
-            <div class="security-actions">
-                <h4 class="mb-4">Security Actions</h4>
-                
-                <div class="row">
-                    <div class="col-md-6">
-                        <button class="btn btn-outline-primary action-btn" onclick="viewSecurityLogs()">
-                            <i class="fas fa-clipboard-list"></i> View Security Logs
-                        </button>
-                        
-                        <button class="btn btn-outline-warning action-btn" onclick="checkSystemHealth()">
-                            <i class="fas fa-heartbeat"></i> System Health Check
-                        </button>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <button class="btn btn-outline-info action-btn" onclick="viewUserActivity()">
-                            <i class="fas fa-user-clock"></i> User Activity Monitor
-                        </button>
-                        
-                        <button class="btn btn-outline-danger action-btn" onclick="emergencyLockdown()">
-                            <i class="fas fa-lock"></i> Emergency Lockdown
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="alert alert-info mt-4">
-                    <h6><i class="fas fa-info-circle"></i> Security Status:</h6>
-                    <p class="mb-0">All security systems are operational. Platform is secure.</p>
+                <div class="mt-4">
+                    <a href="index.html" class="btn btn-primary">
+                        <i class="fas fa-arrow-left"></i> Back to Admin Panel
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../shared/auth.js"></script>
-    <script src="../shared/utils.js"></script>
-    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Check admin access
-            if (!window.auth || !window.auth.currentUser || window.auth.currentUser.email !== ADMIN_EMAIL) {
-                alert('Admin access required');
+            // Check if user is admin
+            const isAdmin = localStorage.getItem('isAdmin') === 'true';
+            if (!isAdmin) {
                 window.location.href = '../index.html';
-                return;
             }
-            
-            // Load security stats
-            loadSecurityStats();
         });
-        
-        function loadSecurityStats() {
-            // Demo stats - in real implementation, fetch from backend
-            document.getElementById('activeUsers').textContent = Math.floor(Math.random() * 100) + 1;
-            document.getElementById('totalSessions').textContent = Math.floor(Math.random() * 500) + 100;
-            document.getElementById('securityEvents').textContent = Math.floor(Math.random() * 20);
-            document.getElementById('blockedAttempts').textContent = Math.floor(Math.random() * 10);
-        }
-        
-        function viewSecurityLogs() {
-            alert('Security logs feature will be available in the next update.');
-        }
-        
-        function checkSystemHealth() {
-            alert('System health check completed. All systems are operational.');
-        }
-        
-        function viewUserActivity() {
-            alert('User activity monitor will be available in the next update.');
-        }
-        
-        function emergencyLockdown() {
-            if (confirm('Are you sure you want to initiate emergency lockdown? This will log out all users.')) {
-                alert('Emergency lockdown initiated. All users will be logged out.');
-                // In real implementation, call backend API
-            }
-        }
     </script>
 </body>
 </html>
